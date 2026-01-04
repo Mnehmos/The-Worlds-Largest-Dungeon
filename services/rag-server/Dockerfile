@@ -14,17 +14,26 @@ RUN npm run build
 # Production stage
 FROM node:20-slim
 
+# Install unzip utility
+RUN apt-get update && apt-get install -y unzip && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
 # Copy package files and install production dependencies only
 COPY package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
-# Copy built files and data
+# Copy built files
 COPY --from=builder /app/dist/ ./dist/
-COPY data/ ./data/
 COPY sources.jsonl ./
 COPY project.json ./
+
+# Copy compressed data and unzip
+COPY data/*.zip ./data/
+RUN cd data && \
+    unzip -o chunks.jsonl.zip && \
+    unzip -o vectors.jsonl.zip && \
+    rm *.zip
 
 ENV NODE_ENV=production
 ENV PORT=8080

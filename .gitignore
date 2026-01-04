@@ -20,9 +20,12 @@ node_modules/
 dist/
 *.log
 
-# Generated data files (too large for GitHub)
+# Generated data files (too large for GitHub - use .zip versions)
 services/rag-server/data/vectors.jsonl
 services/rag-server/data/chunks.jsonl
+# But allow compressed versions (under 100MB)
+!services/rag-server/data/chunks.jsonl.zip
+!services/rag-server/data/vectors.jsonl.zip
 tools/data-pipeline/output/*.json
 
 # SQLite database exceptions
