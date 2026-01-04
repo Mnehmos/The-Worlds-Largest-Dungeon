@@ -2,71 +2,114 @@
 /**
  * ChatInterface.astro
  * Main chat UI component for interacting with the WLD chat API.
- * Includes message history, input field, and loading states.
+ * Includes message history, input field, loading states, and side-by-side source display.
+ * Now with enhanced User/System identifiers (Avatars).
  */
+
+import { marked } from "marked";
 
 interface Props {
   placeholder?: string;
   welcomeMessage?: string;
 }
 
-const { 
+const {
   placeholder = "Ask about the dungeon, rules, monsters...",
-  welcomeMessage = "Welcome, adventurer! Ask me anything about The World's Largest Dungeon, D&D 5e rules, monsters, spells, or items."
+  welcomeMessage = "Welcome, adventurer! I am the Dungeon Master. Ask me anything about The World's Largest Dungeon, D&D 5e rules, monsters, spells, or items.",
 } = Astro.props;
 ---
 
 <div class="chat-interface" id="chat-interface">
-  <!-- Message History -->
-  <div class="chat-messages" id="chat-messages" role="log" aria-live="polite" aria-label="Chat messages">
-    <!-- Welcome message -->
-    <div class="message message-system">
-      <div class="message-content">
-        <span class="message-icon">🏰</span>
-        <p>{welcomeMessage}</p>
+  <!-- Main Chat Area -->
+  <div class="chat-main">
+    <!-- Message History -->
+    <div
+      class="chat-messages"
+      id="chat-messages"
+      role="log"
+      aria-live="polite"
+      aria-label="Chat messages"
+    >
+      <!-- Welcome message -->
+      <div class="message message-system">
+        <div class="message-identity">
+          <div class="avatar system-avatar">🏰</div>
+          <span class="sender-name">System</span>
+        </div>
+        <div class="message-content">
+          <p>{welcomeMessage}</p>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Input Area -->
-  <form class="chat-input-form" id="chat-form">
-    <div class="input-wrapper">
-      <label for="chat-input" class="visually-hidden">Your message</label>
-      <textarea
-        id="chat-input"
-        name="message"
-        class="chat-input"
-        placeholder={placeholder}
-        rows="1"
-        required
-        aria-describedby="input-hint"
-      ></textarea>
-      <span id="input-hint" class="visually-hidden">Press Enter to send, Shift+Enter for new line</span>
+    <!-- Input Area -->
+    <form class="chat-input-form" id="chat-form">
+      <div class="input-wrapper">
+        <label for="chat-input" class="visually-hidden">Your message</label>
+        <textarea
+          id="chat-input"
+          name="message"
+          class="chat-input"
+          placeholder={placeholder}
+          rows="1"
+          required
+          aria-describedby="input-hint"></textarea>
+        <span id="input-hint" class="visually-hidden"
+          >Press Enter to send, Shift+Enter for new line</span
+        >
+      </div>
+      <button
+        type="submit"
+        class="chat-submit"
+        id="chat-submit"
+        aria-label="Send message"
+      >
+        <span class="submit-icon">⚔️</span>
+        <span class="submit-text">Send</span>
+      </button>
+    </form>
+
+    <!-- Loading Indicator -->
+    <div class="chat-loading" id="chat-loading" aria-hidden="true">
+      <div class="loading-spinner"></div>
+      <span>The dungeon master is pondering...</span>
     </div>
-    <button type="submit" class="chat-submit" id="chat-submit" aria-label="Send message">
-      <span class="submit-icon">⚔️</span>
-      <span class="submit-text">Send</span>
-    </button>
-  </form>
 
-  <!-- Loading Indicator -->
-  <div class="chat-loading" id="chat-loading" aria-hidden="true">
-    <div class="loading-spinner"></div>
-    <span>The dungeon master is pondering...</span>
+    <!-- Error Display -->
+    <div class="chat-error" id="chat-error" role="alert" aria-hidden="true">
+      <span class="error-icon">⚠️</span>
+      <span class="error-message" id="error-message"></span>
+      <button
+        class="error-dismiss"
+        id="error-dismiss"
+        aria-label="Dismiss error">×</button
+      >
+    </div>
   </div>
 
-  <!-- Error Display -->
-  <div class="chat-error" id="chat-error" role="alert" aria-hidden="true">
-    <span class="error-icon">⚠️</span>
-    <span class="error-message" id="error-message"></span>
-    <button class="error-dismiss" id="error-dismiss" aria-label="Dismiss error">×</button>
-  </div>
+  <!-- Source Sidebar -->
+  <aside class="source-sidebar" id="source-sidebar" aria-label="Source Details">
+    <div class="sidebar-header">
+      <h3>Source Details</h3>
+      <button
+        class="sidebar-close"
+        id="sidebar-close"
+        aria-label="Close sidebar">×</button
+      >
+    </div>
+    <div class="sidebar-content" id="sidebar-content">
+      <div class="sidebar-empty">
+        <span class="empty-icon">📜</span>
+        <p>Select a source number from the chat to view details here.</p>
+      </div>
+    </div>
+  </aside>
 </div>
 
 <style>
   .chat-interface {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     height: 100%;
     min-height: 500px;
     max-height: calc(100vh - 200px);
@@ -74,6 +117,15 @@ const {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     overflow: hidden;
+    position: relative;
+  }
+
+  /* Main Chat Area */
+  .chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
     position: relative;
   }
 
@@ -87,12 +139,147 @@ const {
     gap: var(--space-md);
   }
 
-  /* Message Bubbles */
+  /* Sidebar Styling */
+  .source-sidebar {
+    width: 0;
+    background: var(--color-bg-tertiary);
+    border-left: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease;
+    overflow: hidden;
+  }
+
+  .source-sidebar.open {
+    width: 350px;
+  }
+
+  .sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-sm) var(--space-md);
+    background: var(--color-bg-elevated);
+    border-bottom: 1px solid var(--color-border);
+    min-height: 50px;
+  }
+
+  .sidebar-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-family: var(--font-display);
+    color: var(--color-text-primary);
+    white-space: nowrap;
+  }
+
+  .sidebar-close {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+  }
+
+  .sidebar-close:hover {
+    color: var(--color-text-primary);
+  }
+
+  .sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-md);
+
+    /* Ensure content is readable */
+    word-break: break-word;
+  }
+
+  .sidebar-empty {
+    text-align: center;
+    color: var(--color-text-muted);
+    margin-top: var(--space-xl);
+    padding: var(--space-lg);
+  }
+
+  .empty-icon {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: var(--space-sm);
+    opacity: 0.5;
+  }
+
+  /* Source Content in Sidebar */
+  :global(.sidebar-source-meta) {
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border-subtle);
+  }
+
+  :global(.sidebar-source-badge) {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-right: var(--space-sm);
+  }
+
+  :global(.sidebar-source-badge.rag) {
+    background: rgba(180, 120, 60, 0.15);
+    color: var(--color-accent-secondary);
+    border: 1px solid var(--color-accent-secondary);
+  }
+
+  :global(.sidebar-source-badge.sqlite) {
+    background: rgba(201, 162, 39, 0.15);
+    color: var(--color-accent-primary);
+    border: 1px solid var(--color-accent-primary);
+  }
+
+  :global(.sidebar-source-score) {
+    font-size: 0.8rem;
+    color: var(--color-success);
+    font-weight: 600;
+  }
+
+  :global(.sidebar-source-ref) {
+    display: block;
+    margin-top: var(--space-xs);
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--color-text-primary);
+    word-break: break-all;
+  }
+
+  :global(.sidebar-source-text) {
+    white-space: pre-wrap;
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+  }
+
+  :global(.sidebar-source-link) {
+    display: inline-block;
+    margin-top: var(--space-md);
+    color: var(--color-accent-primary);
+    font-size: 0.85rem;
+    text-decoration: none;
+  }
+
+  :global(.sidebar-source-link:hover) {
+    text-decoration: underline;
+  }
+
+  /* Message Bubbles - UPDATED LAYOUT */
   .message {
     display: flex;
     gap: var(--space-sm);
-    max-width: 85%;
+    max-width: 90%; /* Increased width slightly */
     animation: messageSlideIn 0.3s ease;
+    align-items: flex-start; /* Align avatar with top */
   }
 
   @keyframes messageSlideIn {
@@ -106,36 +293,100 @@ const {
     }
   }
 
+  /* User Message: Row Reverse (Right aligned) */
   .message-user {
     align-self: flex-end;
     flex-direction: row-reverse;
   }
 
+  /* Assistant/System Message: Row (Left aligned) */
   .message-assistant {
     align-self: flex-start;
+    flex-direction: row;
   }
 
   .message-system {
     align-self: center;
-    max-width: 90%;
+    flex-direction: column; /* Center system messages vertically stacked */
+    align-items: center;
+    max-width: 80%;
   }
 
+  /* Identity Column (Avatar + Name) */
+  .message-identity {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 60px; /* Fixed width for alignment */
+    flex-shrink: 0;
+  }
+
+  .avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .user-avatar {
+    background: linear-gradient(
+      135deg,
+      var(--color-accent-secondary) 0%,
+      var(--color-accent-primary) 100%
+    );
+    color: var(--color-bg-primary);
+    border: none;
+  }
+
+  .assistant-avatar {
+    background: var(--color-bg-tertiary);
+    color: var(--color-accent-primary);
+    border-color: var(--color-accent-primary);
+  }
+
+  .sender-name {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    text-align: center;
+    line-height: 1.2;
+  }
+
+  /* Content area */
   .message-content {
     padding: var(--space-md);
     border-radius: var(--radius-md);
     line-height: 1.5;
+    flex: 1;
+    min-width: 0; /* Text wrap fix */
   }
 
+  /* Specific Bubble Styles */
   .message-user .message-content {
-    background: linear-gradient(135deg, var(--color-accent-secondary) 0%, var(--color-accent-primary) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-accent-secondary) 0%,
+      var(--color-accent-primary) 100%
+    );
     color: var(--color-bg-primary);
     border-bottom-right-radius: var(--radius-sm);
+    /* Arrow effect */
+    border-top-right-radius: 0;
   }
 
   .message-assistant .message-content {
     background: var(--color-bg-tertiary);
     border: 1px solid var(--color-border);
     border-bottom-left-radius: var(--radius-sm);
+    /* Arrow effect */
+    border-top-left-radius: 0;
   }
 
   .message-system .message-content {
@@ -144,14 +395,18 @@ const {
     text-align: center;
     font-style: italic;
     color: var(--color-text-secondary);
-    display: flex;
-    align-items: center;
-    gap: var(--space-sm);
-    justify-content: center;
   }
 
-  .message-icon {
-    font-size: 1.25rem;
+  .message-system .message-identity {
+    display: none; /* Hide standard identity for system center messages, or customizing it */
+  }
+
+  /* Restore system icon inside content if needed, or style differently */
+  .message-system .message-content::before {
+    content: "🏰";
+    display: block;
+    font-size: 1.5rem;
+    margin-bottom: var(--space-xs);
   }
 
   .message-content p {
@@ -176,10 +431,18 @@ const {
     font-family: var(--font-display);
   }
 
-  .markdown-content h1 { font-size: 1.5rem; }
-  .markdown-content h2 { font-size: 1.25rem; }
-  .markdown-content h3 { font-size: 1.1rem; }
-  .markdown-content h4 { font-size: 1rem; }
+  .markdown-content h1 {
+    font-size: 1.5rem;
+  }
+  .markdown-content h2 {
+    font-size: 1.25rem;
+  }
+  .markdown-content h3 {
+    font-size: 1.1rem;
+  }
+  .markdown-content h4 {
+    font-size: 1rem;
+  }
 
   .markdown-content h1:first-child,
   .markdown-content h2:first-child,
@@ -300,11 +563,11 @@ const {
 
   /* Sources - Clickable Buttons */
   .message-sources {
-    margin-top: var(--space-sm, 0.5rem);
-    padding-top: var(--space-sm, 0.5rem);
-    border-top: 1px solid var(--color-border-subtle, #2a2a2a);
+    margin-top: var(--space-sm);
+    padding-top: var(--space-sm);
+    border-top: 1px solid var(--color-border-subtle);
     font-size: 0.875rem;
-    color: var(--color-text-secondary, #b8b5b0);
+    color: var(--color-text-secondary);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -313,7 +576,7 @@ const {
 
   .sources-label {
     font-size: 0.8rem;
-    color: var(--color-text-muted, #6b6965);
+    color: var(--color-text-muted);
     margin-right: 4px;
   }
 
@@ -330,7 +593,7 @@ const {
     border-radius: 4px;
     font-size: 0.8rem;
     font-weight: 700;
-    font-family: 'Consolas', monospace;
+    font-family: "Consolas", monospace;
     cursor: pointer;
     transition: all 0.15s ease;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
@@ -387,153 +650,13 @@ const {
   }
 
   .tool-badge.both {
-    background: linear-gradient(135deg, rgba(201, 162, 39, 0.15) 0%, rgba(180, 120, 60, 0.15) 100%);
+    background: linear-gradient(
+      135deg,
+      rgba(201, 162, 39, 0.15) 0%,
+      rgba(180, 120, 60, 0.15) 100%
+    );
     color: var(--color-text-primary);
     border: 1px solid var(--color-border);
-  }
-
-  /* Query Type Badge */
-  .query-type {
-    display: inline-block;
-    font-size: 0.7rem;
-    padding: 2px 6px;
-    border-radius: var(--radius-sm);
-    background: var(--color-bg-secondary);
-    color: var(--color-text-muted);
-    margin-top: var(--space-xs);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
-  /* Source Modal Overlay */
-  .source-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.75);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: var(--space-md);
-    animation: fadeIn 0.2s ease;
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  .source-modal {
-    background: var(--color-bg-secondary);
-    border-radius: var(--radius-lg);
-    max-width: 700px;
-    width: 100%;
-    max-height: 80vh;
-    overflow: hidden;
-    box-shadow: var(--shadow-lg);
-    border: 1px solid var(--color-border);
-    animation: slideUp 0.3s ease;
-  }
-
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .source-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: var(--space-md) var(--space-lg);
-    background: linear-gradient(135deg, var(--color-accent-secondary) 0%, var(--color-accent-primary) 100%);
-    color: var(--color-bg-primary);
-  }
-
-  .source-modal-header h3 {
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    font-family: var(--font-display);
-  }
-
-  .source-modal-close {
-    background: none;
-    border: none;
-    color: var(--color-bg-primary);
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    opacity: 0.8;
-    transition: opacity var(--transition-fast);
-  }
-
-  .source-modal-close:hover {
-    opacity: 1;
-  }
-
-  .source-modal-meta {
-    display: flex;
-    gap: var(--space-md);
-    padding: var(--space-sm) var(--space-lg);
-    background: var(--color-bg-tertiary);
-    border-bottom: 1px solid var(--color-border);
-    font-size: 0.85rem;
-    flex-wrap: wrap;
-  }
-
-  .source-score {
-    color: var(--color-accent-primary);
-    font-weight: 600;
-  }
-
-  .source-type-badge {
-    display: inline-block;
-    background: var(--color-bg-elevated);
-    color: var(--color-text-secondary);
-    padding: 2px 8px;
-    border-radius: var(--radius-sm);
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-  }
-
-  .source-modal-actions {
-    padding: var(--space-sm) var(--space-lg);
-    border-bottom: 1px solid var(--color-border);
-    background: var(--color-bg-tertiary);
-  }
-
-  .source-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--color-accent-primary);
-    font-weight: 500;
-    text-decoration: none;
-    font-size: 0.9rem;
-    transition: color var(--transition-fast);
-  }
-
-  .source-link:hover {
-    color: var(--color-accent-secondary);
-    text-decoration: underline;
-  }
-
-  .source-modal-content {
-    padding: var(--space-lg);
-    max-height: 50vh;
-    overflow-y: auto;
-    line-height: 1.6;
-    color: var(--color-text-primary);
-  }
-
-  .source-modal-content pre {
-    white-space: pre-wrap;
-    word-break: break-word;
-    margin: 0;
-    font-family: var(--font-body);
-    font-size: 0.95rem;
   }
 
   /* Input Form */
@@ -561,7 +684,9 @@ const {
     resize: none;
     min-height: 48px;
     max-height: 120px;
-    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    transition:
+      border-color var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
   .chat-input::placeholder {
@@ -579,7 +704,11 @@ const {
     align-items: center;
     gap: var(--space-xs);
     padding: var(--space-md) var(--space-lg);
-    background: linear-gradient(135deg, var(--color-accent-secondary) 0%, var(--color-accent-primary) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-accent-secondary) 0%,
+      var(--color-accent-primary) 100%
+    );
     border: none;
     border-radius: var(--radius-md);
     color: var(--color-bg-primary);
@@ -587,7 +716,9 @@ const {
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    transition:
+      transform var(--transition-fast),
+      box-shadow var(--transition-fast);
   }
 
   .chat-submit:hover:not(:disabled) {
@@ -624,6 +755,7 @@ const {
     font-size: 0.875rem;
     color: var(--color-text-secondary);
     box-shadow: var(--shadow-md);
+    z-index: 10;
   }
 
   .chat-loading.visible {
@@ -640,7 +772,9 @@ const {
   }
 
   @keyframes spin {
-    to { transform: rotate(360deg); }
+    to {
+      transform: rotate(360deg);
+    }
   }
 
   /* Error Display */
@@ -657,6 +791,7 @@ const {
     border: 1px solid var(--color-error);
     border-radius: var(--radius-md);
     color: var(--color-error);
+    z-index: 20;
   }
 
   .chat-error.visible {
@@ -687,31 +822,19 @@ const {
     opacity: 1;
   }
 
-  /* Responsive */
+  /* Responsive: On mobile, sidebar becomes an overlay */
   @media (max-width: 768px) {
     .chat-interface {
-      min-height: 400px;
-      max-height: calc(100vh - 150px);
+      flex-direction: column;
     }
 
-    .chat-messages {
-      padding: var(--space-md);
-    }
-
-    .message {
-      max-width: 95%;
-    }
-
-    .chat-input-form {
-      padding: var(--space-sm);
-    }
-
-    .chat-submit {
-      padding: var(--space-md);
-    }
-
-    .submit-text {
-      display: none;
+    .source-sidebar {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 50;
+      box-shadow: var(--shadow-xl);
     }
   }
 
@@ -720,11 +843,8 @@ const {
     .message {
       animation: none;
     }
-
-    .loading-spinner {
-      animation: none;
-      border-top-color: var(--color-accent-primary);
-      opacity: 0.5;
+    .source-sidebar {
+      transition: none;
     }
   }
 </style>
@@ -732,38 +852,46 @@ const {
 <script>
   /**
    * Chat Interface Client-Side Logic
-   * Handles form submission, API calls, and message rendering
+   * Handles form submission, API calls, message rendering, and sidebar control
    */
 
-  import { marked } from 'marked';
+  import { marked } from "marked";
 
   // Configure marked for safe HTML output
   marked.setOptions({
     breaks: true, // Convert \n to <br>
-    gfm: true,    // GitHub Flavored Markdown
+    gfm: true, // GitHub Flavored Markdown
   });
 
   // Configuration
-  const CHAT_API_URL = import.meta.env.CHAT_API_URL || 'http://localhost:8080';
+  const CHAT_API_URL = import.meta.env.CHAT_API_URL || "http://localhost:8080";
 
   // DOM Elements
-  const chatInterface = document.getElementById('chat-interface');
-  const chatMessages = document.getElementById('chat-messages');
-  const chatForm = document.getElementById('chat-form') as HTMLFormElement;
-  const chatInput = document.getElementById('chat-input') as HTMLTextAreaElement;
-  const chatSubmit = document.getElementById('chat-submit') as HTMLButtonElement;
-  const chatLoading = document.getElementById('chat-loading');
-  const chatError = document.getElementById('chat-error');
-  const errorMessage = document.getElementById('error-message');
-  const errorDismiss = document.getElementById('error-dismiss');
+  const chatMessages = document.getElementById("chat-messages");
+  const chatForm = document.getElementById("chat-form") as HTMLFormElement;
+  const chatInput = document.getElementById(
+    "chat-input"
+  ) as HTMLTextAreaElement;
+  const chatSubmit = document.getElementById(
+    "chat-submit"
+  ) as HTMLButtonElement;
+  const chatLoading = document.getElementById("chat-loading");
+  const chatError = document.getElementById("chat-error");
+  const errorMessage = document.getElementById("error-message");
+  const errorDismiss = document.getElementById("error-dismiss");
+
+  // Sidebar Elements
+  const sourceSidebar = document.getElementById("source-sidebar");
+  const sidebarContent = document.getElementById("sidebar-content");
+  const sidebarClose = document.getElementById("sidebar-close");
 
   // State
   let isLoading = false;
-  let currentSources: SourceReference[] = [];  // Store sources for modal display
+  let currentSources: SourceReference[] = []; // Store sources for sidebar display
 
   // Types
   interface SourceReference {
-    type: 'rag' | 'sqlite';
+    type: "rag" | "sqlite";
     reference: string;
     url: string;
     text?: string;
@@ -773,58 +901,67 @@ const {
   interface ChatResponse {
     answer: string;
     sources: SourceReference[];
-    query_type: 'semantic' | 'structured' | 'hybrid';
-    tool_used: 'sqlite' | 'rag' | 'both' | 'none';
-    classification?: {
-      confidence: number;
-      reasoning: string;
-    };
+    query_type: "semantic" | "structured" | "hybrid";
+    tool_used: "sqlite" | "rag" | "both" | "none";
   }
 
   // Auto-resize textarea
   function autoResize(textarea: HTMLTextAreaElement) {
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+    textarea.style.height = "auto";
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
   }
 
-  chatInput?.addEventListener('input', () => autoResize(chatInput));
+  chatInput?.addEventListener("input", () => autoResize(chatInput));
 
   // Handle Enter key (send) vs Shift+Enter (new line)
-  chatInput?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+  chatInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       chatForm?.requestSubmit();
     }
   });
 
   // Dismiss error
-  errorDismiss?.addEventListener('click', hideError);
+  errorDismiss?.addEventListener("click", hideError);
+
+  // Close sidebar
+  sidebarClose?.addEventListener("click", closeSidebar);
 
   // Form submission
-  chatForm?.addEventListener('submit', async (e) => {
+  chatForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
-    
+
     const message = chatInput?.value.trim();
     if (!message || isLoading) return;
 
     // Add user message to chat
-    addMessage(message, 'user');
-    
+    addMessage(message, "user");
+
     // Clear input and reset height
-    chatInput.value = '';
+    chatInput.value = "";
     autoResize(chatInput);
-    
+
     // Show loading state
     setLoading(true);
     hideError();
+    // Close sidebar on new query to focus on chat
+    closeSidebar();
 
     try {
       const response = await sendMessage(message);
-      // Store sources for modal access
+      // Store sources for access
       currentSources = response.sources || [];
-      addMessage(response.answer, 'assistant', response.sources, response.query_type, response.tool_used);
+      addMessage(
+        response.answer,
+        "assistant",
+        response.sources,
+        response.query_type,
+        response.tool_used
+      );
     } catch (error) {
-      showError(error instanceof Error ? error.message : 'An unexpected error occurred');
+      showError(
+        error instanceof Error ? error.message : "An unexpected error occurred"
+      );
     } finally {
       setLoading(false);
     }
@@ -835,15 +972,15 @@ const {
    */
   async function sendMessage(message: string): Promise<ChatResponse> {
     const response = await fetch(`${CHAT_API_URL}/chat`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ message }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
+      const errorText = await response.text().catch(() => "Unknown error");
       throw new Error(`Request failed: ${response.status} - ${errorText}`);
     }
 
@@ -855,75 +992,99 @@ const {
    */
   function addMessage(
     content: string,
-    type: 'user' | 'assistant' | 'system',
+    type: "user" | "assistant" | "system",
     sources?: SourceReference[],
     queryType?: string,
-    toolUsed?: 'sqlite' | 'rag' | 'both' | 'none'
+    toolUsed?: "sqlite" | "rag" | "both" | "none"
   ) {
-    const messageEl = document.createElement('div');
+    const messageEl = document.createElement("div");
     messageEl.className = `message message-${type}`;
 
-    const contentEl = document.createElement('div');
-    contentEl.className = 'message-content';
+    // Identity Section (Avatar + Name)
+    const identityEl = document.createElement("div");
+    identityEl.className = "message-identity";
+
+    const avatarEl = document.createElement("div");
+    const nameEl = document.createElement("span");
+    nameEl.className = "sender-name";
+
+    if (type === "user") {
+      avatarEl.className = "avatar user-avatar";
+      avatarEl.textContent = "👤";
+      nameEl.textContent = "You";
+    } else if (type === "assistant") {
+      avatarEl.className = "avatar assistant-avatar";
+      avatarEl.textContent = "🧙‍♂️";
+      nameEl.textContent = "Dungeon Master";
+    }
+
+    // System messages handle identity via CSS hiding usually, but we can set it
+    if (type !== "system") {
+      identityEl.appendChild(avatarEl);
+      identityEl.appendChild(nameEl);
+      messageEl.appendChild(identityEl);
+    }
+
+    // Content Section
+    const contentEl = document.createElement("div");
+    contentEl.className = "message-content";
 
     // Render markdown for assistant messages, plain text for user
-    if (type === 'assistant') {
+    if (type === "assistant") {
       const markdownHtml = marked.parse(content) as string;
-      const markdownWrapper = document.createElement('div');
-      markdownWrapper.className = 'markdown-content';
+      const markdownWrapper = document.createElement("div");
+      markdownWrapper.className = "markdown-content";
       markdownWrapper.innerHTML = markdownHtml;
       contentEl.appendChild(markdownWrapper);
     } else {
       // User messages are plain text
-      const paragraphs = content.split('\n\n').filter(p => p.trim());
-      paragraphs.forEach(p => {
-        const pEl = document.createElement('p');
+      const paragraphs = content.split("\n\n").filter((p) => p.trim());
+      paragraphs.forEach((p) => {
+        const pEl = document.createElement("p");
         pEl.textContent = p.trim();
         contentEl.appendChild(pEl);
       });
     }
 
     // Add tool used badge and source buttons for assistant messages
-    if (type === 'assistant' && (sources?.length || toolUsed)) {
-      const sourcesEl = document.createElement('div');
-      sourcesEl.className = 'message-sources';
-      
+    if (type === "assistant" && (sources?.length || toolUsed)) {
+      const sourcesEl = document.createElement("div");
+      sourcesEl.className = "message-sources";
+
       // Add tool badge first
-      if (toolUsed && toolUsed !== 'none') {
-        const toolBadge = document.createElement('span');
+      if (toolUsed && toolUsed !== "none") {
+        const toolBadge = document.createElement("span");
         toolBadge.className = `tool-badge ${toolUsed}`;
-        const toolIcon = toolUsed === 'sqlite' ? '📊' : toolUsed === 'rag' ? '🔍' : '⚡';
-        const toolLabel = toolUsed === 'both' ? 'SQLite + RAG' : toolUsed.toUpperCase();
+        const toolIcon =
+          toolUsed === "sqlite" ? "📊" : toolUsed === "rag" ? "🔍" : "⚡";
+        const toolLabel =
+          toolUsed === "both" ? "SQLite + RAG" : toolUsed.toUpperCase();
         toolBadge.innerHTML = `${toolIcon} ${toolLabel}`;
         sourcesEl.appendChild(toolBadge);
       }
-      
+
       // Add source buttons
       if (sources && sources.length > 0) {
-        const label = document.createElement('span');
-        label.className = 'sources-label';
-        label.textContent = 'Sources:';
+        const label = document.createElement("span");
+        label.className = "sources-label";
+        label.textContent = "Sources:";
         sourcesEl.appendChild(label);
-        
+
         sources.forEach((source, index) => {
-          const btn = document.createElement('button');
+          const btn = document.createElement("button");
           btn.className = `source-btn ${source.type}`;
           btn.textContent = `${index + 1}`;
           btn.title = source.reference;
-          btn.addEventListener('click', () => showSourceModal(index));
+          // IMPORTANT: Update to open sidebar instead of modal
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation(); // Prevent bubbling
+            showSourceInSidebar(index);
+          });
           sourcesEl.appendChild(btn);
         });
       }
-      
-      contentEl.appendChild(sourcesEl);
-    }
 
-    // Add query type badge if present
-    if (queryType && type === 'assistant') {
-      const badge = document.createElement('span');
-      badge.className = 'query-type';
-      badge.textContent = queryType;
-      contentEl.appendChild(badge);
+      contentEl.appendChild(sourcesEl);
     }
 
     messageEl.appendChild(contentEl);
@@ -934,97 +1095,33 @@ const {
   }
 
   /**
-   * Show source modal with full content
+   * Display source details in the sidebar
    */
-  function showSourceModal(index: number) {
+  function showSourceInSidebar(index: number) {
     const source = currentSources[index];
     if (!source) return;
-    
-    // Remove existing modal if present
-    const existingModal = document.getElementById('source-modal-overlay');
-    if (existingModal) existingModal.remove();
-    
-    // Create modal overlay
-    const overlay = document.createElement('div');
-    overlay.id = 'source-modal-overlay';
-    overlay.className = 'source-modal-overlay';
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) overlay.remove();
-    });
-    
-    // Create modal content
-    const modal = document.createElement('div');
-    modal.className = 'source-modal';
-    
-    // Header
-    const header = document.createElement('div');
-    header.className = 'source-modal-header';
-    const title = document.createElement('h3');
-    title.textContent = `Source ${index + 1}`;
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'source-modal-close';
-    closeBtn.innerHTML = '×';
-    closeBtn.addEventListener('click', () => overlay.remove());
-    header.appendChild(title);
-    header.appendChild(closeBtn);
-    
-    // Meta info
-    const meta = document.createElement('div');
-    meta.className = 'source-modal-meta';
-    
-    const typeBadge = document.createElement('span');
-    typeBadge.className = 'source-type-badge';
-    typeBadge.textContent = source.type.toUpperCase();
-    meta.appendChild(typeBadge);
-    
-    if (source.score !== undefined) {
-      const scoreEl = document.createElement('span');
-      scoreEl.className = 'source-score';
-      scoreEl.textContent = `Score: ${(source.score * 100).toFixed(1)}%`;
-      meta.appendChild(scoreEl);
+
+    if (sidebarContent) {
+      sidebarContent.innerHTML = `
+        <div class="sidebar-source-meta">
+          <span class="sidebar-source-badge ${source.type}">${source.type}</span>
+          ${source.score !== undefined ? `<span class="sidebar-source-score">${(source.score * 100).toFixed(1)}% Match</span>` : ""}
+          <div class="sidebar-source-ref">${source.reference}</div>
+        </div>
+        <div class="sidebar-source-text">${source.text || "No preview available."}</div>
+        <a href="${source.url}" target="_blank" rel="noopener noreferrer" class="sidebar-source-link">📂 View on GitHub →</a>
+      `;
     }
-    
-    // Reference name
-    const refEl = document.createElement('span');
-    refEl.textContent = source.reference;
-    meta.appendChild(refEl);
-    
-    // Actions (GitHub link)
-    const actions = document.createElement('div');
-    actions.className = 'source-modal-actions';
-    const link = document.createElement('a');
-    link.className = 'source-link';
-    link.href = source.url;
-    link.target = '_blank';
-    link.rel = 'noopener noreferrer';
-    link.innerHTML = '📂 View on GitHub →';
-    actions.appendChild(link);
-    
-    // Content
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'source-modal-content';
-    const pre = document.createElement('pre');
-    pre.textContent = source.text || 'No preview available';
-    contentDiv.appendChild(pre);
-    
-    // Assemble modal
-    modal.appendChild(header);
-    modal.appendChild(meta);
-    modal.appendChild(actions);
-    modal.appendChild(contentDiv);
-    overlay.appendChild(modal);
-    
-    // Add to document
-    document.body.appendChild(overlay);
-    
-    // Close on Escape key
-    const escHandler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        overlay.remove();
-        document.removeEventListener('keydown', escHandler);
-      }
-    };
-    document.addEventListener('keydown', escHandler);
+
+    openSidebar();
+  }
+
+  function openSidebar() {
+    sourceSidebar?.classList.add("open");
+  }
+
+  function closeSidebar() {
+    sourceSidebar?.classList.remove("open");
   }
 
   /**
@@ -1041,16 +1138,16 @@ const {
    */
   function setLoading(loading: boolean) {
     isLoading = loading;
-    
+
     if (chatSubmit) {
       chatSubmit.disabled = loading;
     }
-    
+
     if (chatLoading) {
-      chatLoading.classList.toggle('visible', loading);
-      chatLoading.setAttribute('aria-hidden', (!loading).toString());
+      chatLoading.classList.toggle("visible", loading);
+      chatLoading.setAttribute("aria-hidden", (!loading).toString());
     }
-    
+
     if (chatInput) {
       chatInput.disabled = loading;
     }
@@ -1064,8 +1161,8 @@ const {
       errorMessage.textContent = message;
     }
     if (chatError) {
-      chatError.classList.add('visible');
-      chatError.setAttribute('aria-hidden', 'false');
+      chatError.classList.add("visible");
+      chatError.setAttribute("aria-hidden", "false");
     }
   }
 
@@ -1074,8 +1171,8 @@ const {
    */
   function hideError() {
     if (chatError) {
-      chatError.classList.remove('visible');
-      chatError.setAttribute('aria-hidden', 'true');
+      chatError.classList.remove("visible");
+      chatError.setAttribute("aria-hidden", "true");
     }
   }
 
