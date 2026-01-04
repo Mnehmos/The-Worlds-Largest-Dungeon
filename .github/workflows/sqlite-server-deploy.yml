@@ -53,13 +53,8 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
         
-      - name: Link Railway Project
-        run: railway link ${{ env.RAILWAY_PROJECT_ID }}
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        
-      - name: Link SQLite Server Service
-        run: railway service link sqlite-server
+      - name: Link Railway Project and Service
+        run: railway link -p ${{ env.RAILWAY_PROJECT_ID }} -s sqlite-server
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         

@@ -19,13 +19,8 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
         
-      - name: Link Railway Project
-        run: railway link ${{ env.RAILWAY_PROJECT_ID }}
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        
-      - name: Link Chat API Service
-        run: railway service link The-Worlds-Largest-Dungeon
+      - name: Link Railway Project and Service
+        run: railway link -p ${{ env.RAILWAY_PROJECT_ID }} -s The-Worlds-Largest-Dungeon
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         
