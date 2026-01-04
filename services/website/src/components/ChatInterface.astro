@@ -298,35 +298,86 @@ const {
     color: var(--color-accent-secondary);
   }
 
-  /* Sources */
+  /* Sources - Clickable Buttons */
   .message-sources {
     margin-top: var(--space-sm);
     padding-top: var(--space-sm);
     border-top: 1px solid var(--color-border-subtle);
     font-size: 0.875rem;
     color: var(--color-text-secondary);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-xs);
   }
 
-  .message-sources summary {
-    cursor: pointer;
-    color: var(--color-accent-primary);
-    font-weight: 600;
-  }
-
-  .message-sources ul {
-    margin: var(--space-xs) 0 0 var(--space-md);
-    padding: 0;
-    list-style: none;
-  }
-
-  .message-sources li {
-    padding: var(--space-xs) 0;
-    font-family: var(--font-mono);
+  .sources-label {
     font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-right: var(--space-xs);
   }
 
-  .message-sources li::before {
-    content: "📜 ";
+  .source-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    padding: 0 8px;
+    background: var(--color-accent-primary);
+    color: var(--color-bg-primary);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: transform var(--transition-fast), background-color var(--transition-fast);
+  }
+
+  .source-btn:hover {
+    background: var(--color-accent-secondary);
+    transform: scale(1.1);
+  }
+
+  .source-btn.rag {
+    background: var(--color-accent-secondary);
+  }
+
+  .source-btn.sqlite {
+    background: var(--color-accent-primary);
+  }
+
+  /* Tool Used Badge */
+  .tool-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin-right: var(--space-xs);
+  }
+
+  .tool-badge.sqlite {
+    background: rgba(201, 162, 39, 0.15);
+    color: var(--color-accent-primary);
+    border: 1px solid var(--color-accent-primary);
+  }
+
+  .tool-badge.rag {
+    background: rgba(180, 120, 60, 0.15);
+    color: var(--color-accent-secondary);
+    border: 1px solid var(--color-accent-secondary);
+  }
+
+  .tool-badge.both {
+    background: linear-gradient(135deg, rgba(201, 162, 39, 0.15) 0%, rgba(180, 120, 60, 0.15) 100%);
+    color: var(--color-text-primary);
+    border: 1px solid var(--color-border);
   }
 
   /* Query Type Badge */
@@ -340,6 +391,137 @@ const {
     margin-top: var(--space-xs);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+  }
+
+  /* Source Modal Overlay */
+  .source-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--space-md);
+    animation: fadeIn 0.2s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .source-modal {
+    background: var(--color-bg-secondary);
+    border-radius: var(--radius-lg);
+    max-width: 700px;
+    width: 100%;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--color-border);
+    animation: slideUp 0.3s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .source-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-md) var(--space-lg);
+    background: linear-gradient(135deg, var(--color-accent-secondary) 0%, var(--color-accent-primary) 100%);
+    color: var(--color-bg-primary);
+  }
+
+  .source-modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    font-family: var(--font-display);
+  }
+
+  .source-modal-close {
+    background: none;
+    border: none;
+    color: var(--color-bg-primary);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    opacity: 0.8;
+    transition: opacity var(--transition-fast);
+  }
+
+  .source-modal-close:hover {
+    opacity: 1;
+  }
+
+  .source-modal-meta {
+    display: flex;
+    gap: var(--space-md);
+    padding: var(--space-sm) var(--space-lg);
+    background: var(--color-bg-tertiary);
+    border-bottom: 1px solid var(--color-border);
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+  }
+
+  .source-score {
+    color: var(--color-accent-primary);
+    font-weight: 600;
+  }
+
+  .source-type-badge {
+    display: inline-block;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-secondary);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .source-modal-actions {
+    padding: var(--space-sm) var(--space-lg);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg-tertiary);
+  }
+
+  .source-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--color-accent-primary);
+    font-weight: 500;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color var(--transition-fast);
+  }
+
+  .source-link:hover {
+    color: var(--color-accent-secondary);
+    text-decoration: underline;
+  }
+
+  .source-modal-content {
+    padding: var(--space-lg);
+    max-height: 50vh;
+    overflow-y: auto;
+    line-height: 1.6;
+    color: var(--color-text-primary);
+  }
+
+  .source-modal-content pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    margin: 0;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
   }
 
   /* Input Form */
@@ -565,12 +747,26 @@ const {
 
   // State
   let isLoading = false;
+  let currentSources: SourceReference[] = [];  // Store sources for modal display
 
   // Types
+  interface SourceReference {
+    type: 'rag' | 'sqlite';
+    reference: string;
+    url: string;
+    text?: string;
+    score?: number;
+  }
+
   interface ChatResponse {
     answer: string;
-    sources?: Array<{ uri: string; title?: string; score?: number }>;
-    query_type?: 'semantic' | 'structured' | 'hybrid';
+    sources: SourceReference[];
+    query_type: 'semantic' | 'structured' | 'hybrid';
+    tool_used: 'sqlite' | 'rag' | 'both' | 'none';
+    classification?: {
+      confidence: number;
+      reasoning: string;
+    };
   }
 
   // Auto-resize textarea
@@ -612,7 +808,9 @@ const {
 
     try {
       const response = await sendMessage(message);
-      addMessage(response.answer, 'assistant', response.sources, response.query_type);
+      // Store sources for modal access
+      currentSources = response.sources || [];
+      addMessage(response.answer, 'assistant', response.sources, response.query_type, response.tool_used);
     } catch (error) {
       showError(error instanceof Error ? error.message : 'An unexpected error occurred');
     } finally {
@@ -646,8 +844,9 @@ const {
   function addMessage(
     content: string,
     type: 'user' | 'assistant' | 'system',
-    sources?: ChatResponse['sources'],
-    queryType?: string
+    sources?: SourceReference[],
+    queryType?: string,
+    toolUsed?: 'sqlite' | 'rag' | 'both' | 'none'
   ) {
     const messageEl = document.createElement('div');
     messageEl.className = `message message-${type}`;
@@ -672,22 +871,37 @@ const {
       });
     }
 
-    // Add sources if present (assistant messages)
-    if (sources && sources.length > 0 && type === 'assistant') {
-      const sourcesEl = document.createElement('details');
+    // Add tool used badge and source buttons for assistant messages
+    if (type === 'assistant' && (sources?.length || toolUsed)) {
+      const sourcesEl = document.createElement('div');
       sourcesEl.className = 'message-sources';
       
-      const summary = document.createElement('summary');
-      summary.textContent = `${sources.length} source${sources.length > 1 ? 's' : ''}`;
-      sourcesEl.appendChild(summary);
-
-      const ul = document.createElement('ul');
-      sources.forEach(source => {
-        const li = document.createElement('li');
-        li.textContent = source.title || source.uri;
-        ul.appendChild(li);
-      });
-      sourcesEl.appendChild(ul);
+      // Add tool badge first
+      if (toolUsed && toolUsed !== 'none') {
+        const toolBadge = document.createElement('span');
+        toolBadge.className = `tool-badge ${toolUsed}`;
+        const toolIcon = toolUsed === 'sqlite' ? '📊' : toolUsed === 'rag' ? '🔍' : '⚡';
+        const toolLabel = toolUsed === 'both' ? 'SQLite + RAG' : toolUsed.toUpperCase();
+        toolBadge.innerHTML = `${toolIcon} ${toolLabel}`;
+        sourcesEl.appendChild(toolBadge);
+      }
+      
+      // Add source buttons
+      if (sources && sources.length > 0) {
+        const label = document.createElement('span');
+        label.className = 'sources-label';
+        label.textContent = 'Sources:';
+        sourcesEl.appendChild(label);
+        
+        sources.forEach((source, index) => {
+          const btn = document.createElement('button');
+          btn.className = `source-btn ${source.type}`;
+          btn.textContent = `${index + 1}`;
+          btn.title = source.reference;
+          btn.addEventListener('click', () => showSourceModal(index));
+          sourcesEl.appendChild(btn);
+        });
+      }
       
       contentEl.appendChild(sourcesEl);
     }
@@ -705,6 +919,100 @@ const {
 
     // Scroll to bottom
     scrollToBottom();
+  }
+
+  /**
+   * Show source modal with full content
+   */
+  function showSourceModal(index: number) {
+    const source = currentSources[index];
+    if (!source) return;
+    
+    // Remove existing modal if present
+    const existingModal = document.getElementById('source-modal-overlay');
+    if (existingModal) existingModal.remove();
+    
+    // Create modal overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'source-modal-overlay';
+    overlay.className = 'source-modal-overlay';
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) overlay.remove();
+    });
+    
+    // Create modal content
+    const modal = document.createElement('div');
+    modal.className = 'source-modal';
+    
+    // Header
+    const header = document.createElement('div');
+    header.className = 'source-modal-header';
+    const title = document.createElement('h3');
+    title.textContent = `Source ${index + 1}`;
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'source-modal-close';
+    closeBtn.innerHTML = '×';
+    closeBtn.addEventListener('click', () => overlay.remove());
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+    
+    // Meta info
+    const meta = document.createElement('div');
+    meta.className = 'source-modal-meta';
+    
+    const typeBadge = document.createElement('span');
+    typeBadge.className = 'source-type-badge';
+    typeBadge.textContent = source.type.toUpperCase();
+    meta.appendChild(typeBadge);
+    
+    if (source.score !== undefined) {
+      const scoreEl = document.createElement('span');
+      scoreEl.className = 'source-score';
+      scoreEl.textContent = `Score: ${(source.score * 100).toFixed(1)}%`;
+      meta.appendChild(scoreEl);
+    }
+    
+    // Reference name
+    const refEl = document.createElement('span');
+    refEl.textContent = source.reference;
+    meta.appendChild(refEl);
+    
+    // Actions (GitHub link)
+    const actions = document.createElement('div');
+    actions.className = 'source-modal-actions';
+    const link = document.createElement('a');
+    link.className = 'source-link';
+    link.href = source.url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.innerHTML = '📂 View on GitHub →';
+    actions.appendChild(link);
+    
+    // Content
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'source-modal-content';
+    const pre = document.createElement('pre');
+    pre.textContent = source.text || 'No preview available';
+    contentDiv.appendChild(pre);
+    
+    // Assemble modal
+    modal.appendChild(header);
+    modal.appendChild(meta);
+    modal.appendChild(actions);
+    modal.appendChild(contentDiv);
+    overlay.appendChild(modal);
+    
+    // Add to document
+    document.body.appendChild(overlay);
+    
+    // Close on Escape key
+    const escHandler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        overlay.remove();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
   }
 
   /**

@@ -24,6 +24,8 @@ export interface SourceReference {
   type: 'rag' | 'sqlite';
   reference: string;  // Human-readable reference
   url: string;        // Clickable web URL
+  text?: string;      // Full source text for modal display
+  score?: number;     // Relevance score (0-1)
 }
 
 /**

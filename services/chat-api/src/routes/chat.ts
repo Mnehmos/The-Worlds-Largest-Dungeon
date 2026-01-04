@@ -44,6 +44,7 @@ export interface ChatResponse {
   answer: string;
   sources: SourceReference[];
   query_type: 'semantic' | 'structured' | 'hybrid';
+  tool_used: 'sqlite' | 'rag' | 'both' | 'none';  // Which data source was used
   classification: {
     confidence: number;
     reasoning: string;
@@ -98,10 +99,25 @@ router.post('/', async (req: Request<object, object, ChatRequest>, res: Response
       userContext
     );
     
-    // Collect all sources
+    // Determine which tool(s) were used
+    const hasRag = ragResults.length > 0;
+    const hasSqlite = sqliteResults.length > 0;
+    const toolUsed: 'sqlite' | 'rag' | 'both' | 'none' =
+      hasRag && hasSqlite ? 'both' :
+      hasSqlite ? 'sqlite' :
+      hasRag ? 'rag' : 'none';
+    
+    // Collect all sources with text content for modal display
     const allSources: SourceReference[] = [
-      ...ragResults.map(r => r.source),
-      ...sqliteResults.map(r => r.source),
+      ...ragResults.map(r => ({
+        ...r.source,
+        text: r.text,           // Include chunk text for modal
+        score: r.score,         // Include relevance score
+      })),
+      ...sqliteResults.map(r => ({
+        ...r.source,
+        text: r.formattedText,  // Include formatted text for modal
+      })),
     ];
     
     // Step 3: Build combined context for LLM
@@ -120,6 +136,7 @@ router.post('/', async (req: Request<object, object, ChatRequest>, res: Response
         type: 'sources',
         sources: allSources,
         query_type: classification.type,
+        tool_used: toolUsed,
         classification: {
           confidence: classification.confidence,
           reasoning: classification.reasoning,
@@ -165,6 +182,7 @@ router.post('/', async (req: Request<object, object, ChatRequest>, res: Response
       answer: llmResponse.content,
       sources: allSources,
       query_type: classification.type,
+      tool_used: toolUsed,
       classification: {
         confidence: classification.confidence,
         reasoning: classification.reasoning,
