@@ -8,15 +8,14 @@
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 
-// Default to a reliable free-tier model - can be overridden via env
-// Using Llama 3.1 8B which is fast, reliable, and free
-const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || 'meta-llama/llama-3.1-8b-instruct:free';
+// Default to OpenAI's 120B OSS model - can be overridden via env
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || 'openai/gpt-oss-120b';
 
 // Alternative models (various tiers)
 export const AVAILABLE_MODELS = {
+  'gpt-oss-120b': 'openai/gpt-oss-120b',
   'llama-3.1-8b': 'meta-llama/llama-3.1-8b-instruct:free',
   'llama-3.1-70b': 'meta-llama/llama-3.1-70b-instruct',
-  'llama-3.2-3b': 'meta-llama/llama-3.2-3b-instruct:free',
   'qwen-2.5-72b': 'qwen/qwen-2.5-72b-instruct',
   'mistral-nemo': 'mistralai/mistral-nemo:free',
 } as const;
