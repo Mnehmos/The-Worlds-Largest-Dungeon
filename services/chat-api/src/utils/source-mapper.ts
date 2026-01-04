@@ -29,23 +29,65 @@ export interface SourceReference {
 }
 
 /**
+ * Normalizes a path that may contain absolute Windows paths or other prefixes
+ * and extracts just the relative path from the repo root.
+ *
+ * @param path - Path that may be absolute or relative
+ * @returns Relative path from repo root (starting with Resources/)
+ */
+function normalizeToRelativePath(path: string): string {
+  // Normalize backslashes to forward slashes
+  let normalized = path.replace(/\\/g, '/');
+  
+  // Remove Windows drive letter prefix (e.g., C:/, D:/)
+  normalized = normalized.replace(/^[a-zA-Z]:\//, '');
+  
+  // Find the Resources/ folder and extract from there
+  const resourcesIndex = normalized.indexOf('Resources/');
+  if (resourcesIndex !== -1) {
+    return normalized.substring(resourcesIndex);
+  }
+  
+  // Fallback: try to find common repo folders
+  const commonFolders = ['services/', 'tools/', 'docs/', '.github/'];
+  for (const folder of commonFolders) {
+    const index = normalized.indexOf(folder);
+    if (index !== -1) {
+      return normalized.substring(index);
+    }
+  }
+  
+  // If no known prefix found, return as-is but strip any leading path segments
+  // that look like user directories
+  const userDirMatch = normalized.match(/\/(?:Users|home)\/[^/]+\/[^/]+\/[^/]+\/(.+)/);
+  if (userDirMatch) {
+    return userDirMatch[1];
+  }
+  
+  return normalized;
+}
+
+/**
  * Maps a local file or folder path to a web-accessible GitHub URL
- * 
- * @param localPath - Local path relative to repo root (e.g., "Resources/markdown/SRD 5.2")
+ *
+ * @param localPath - Local path (can be absolute Windows path or relative)
  * @param isFolder - Whether the path is a folder (uses tree/) or file (uses blob/)
  * @returns Full GitHub URL with proper encoding
- * 
+ *
  * @example
- * mapSourceToWebUrl("Resources/markdown/SRD 5.2/07-Spells.md")
+ * mapSourceToWebUrl("C:/Users/user/Desktop/repo/Resources/markdown/SRD 5.2/07-Spells.md")
  * // → "https://github.com/mnehmos/The-Worlds-Largest-Dungeon/blob/master/Resources/markdown/SRD%205.2/07-Spells.md"
- * 
+ *
  * @example
  * mapSourceToWebUrl("Resources/markdown/World's Largest Dungeon", true)
  * // → "https://github.com/mnehmos/The-Worlds-Largest-Dungeon/tree/master/Resources/markdown/World%27s%20Largest%20Dungeon"
  */
 export function mapSourceToWebUrl(localPath: string, isFolder = false): string {
+  // Normalize the path to get just the relative repo path
+  const relativePath = normalizeToRelativePath(localPath);
+  
   // Clean the path - remove leading/trailing slashes
-  const cleanPath = localPath.replace(/^\/+|\/+$/g, '');
+  const cleanPath = relativePath.replace(/^\/+|\/+$/g, '');
   
   // URL-encode each path segment separately to preserve slashes
   const encodedPath = cleanPath
