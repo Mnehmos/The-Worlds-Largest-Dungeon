@@ -5,13 +5,12 @@ export default defineConfig({
   // Static site generation for GitHub Pages
   output: 'static',
   
-  // Site URL - set via environment variable for GitHub Pages
-  // Example: SITE_URL=https://username.github.io
-  site: process.env.SITE_URL || 'http://localhost:4321',
+  // Site URL for GitHub Pages
+  site: process.env.SITE_URL || 'https://mnehmos.github.io',
   
-  // Base path for repo deployment (e.g., /repo-name/)
-  // Set via environment variable: BASE_PATH=/The-Worlds-Largest-Dungeon/
-  base: process.env.BASE_PATH || '/',
+  // Base path for GitHub Pages deployment
+  // Repository name must match for assets to load correctly
+  base: process.env.BASE_PATH || '/The-Worlds-Largest-Dungeon/',
   
   // Build configuration
   build: {
