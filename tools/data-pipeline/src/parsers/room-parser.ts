@@ -32,11 +32,21 @@ function extractRegion(roomId: string): string {
  *   "A32. TORTURE CHAMBER" -> { id: "A32", name: "TORTURE CHAMBER" }
  *   "A33-A34. THE AMBUSH" -> { id: "A33-A34", name: "THE AMBUSH" }
  *   "B1. The Entry Hall (EL 2)" -> { id: "B1", name: "The Entry Hall (EL 2)" }
+ *   "Room A1: Entrance" -> { id: "A1", name: "Entrance" }
+ *   "Room A33-A34: The Ambush" -> { id: "A33-A34", name: "The Ambush" }
  */
 function parseRoomHeader(header: string): { id: string; name: string | null } | null {
-  // Pattern: Letter + Number(s) + optional hyphen + more letters/numbers + period + name
-  const match = header.match(/^([A-Z]\d+(?:-[A-Z]?\d+)?)\.\s*(.+)$/i);
+  // Pattern 1: "Room A1: Name" format (with "Room" prefix and colon)
+  const roomPrefixMatch = header.match(/^Room\s+([A-Z]\d+(?:-[A-Z]?\d+)?)[:\s]+(.+)$/i);
+  if (roomPrefixMatch) {
+    return {
+      id: roomPrefixMatch[1].toUpperCase(),
+      name: roomPrefixMatch[2].trim() || null,
+    };
+  }
   
+  // Pattern 2: "A32. TORTURE CHAMBER" format (original)
+  const match = header.match(/^([A-Z]\d+(?:-[A-Z]?\d+)?)\.\s*(.+)$/i);
   if (match) {
     return {
       id: match[1].toUpperCase(),
@@ -44,7 +54,7 @@ function parseRoomHeader(header: string): { id: string; name: string | null } | 
     };
   }
   
-  // Alternative: just the ID without a period
+  // Pattern 3: just the ID without a period
   const simpleMatch = header.match(/^([A-Z]\d+(?:-[A-Z]?\d+)?)\s+(.+)$/i);
   if (simpleMatch) {
     return {
@@ -254,13 +264,15 @@ export function parseRooms(markdownContent: string): ParsedRoom[] {
   // Normalize line endings (Windows CRLF -> LF)
   const normalizedContent = markdownContent.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
   
-  // Split by room headers (## A1. ROOM NAME)
-  const roomPattern = /(?=^## [A-Z]\d+)/m;
+  // Split by room headers - support both formats:
+  // - "## A1. ROOM NAME" (h2, original format)
+  // - "### Room A1: Name" (h3, new format with "Room" prefix)
+  const roomPattern = /(?=^##+ (?:Room\s+)?[A-Z]\d+)/m;
   const roomSections = normalizedContent.split(roomPattern);
 
   for (const section of roomSections) {
-    // Must start with ## (room header)
-    if (!section.startsWith('## ')) {
+    // Must start with ## or ### (room header)
+    if (!section.match(/^##+ /)) {
       continue;
     }
 
@@ -271,7 +283,7 @@ export function parseRooms(markdownContent: string): ParsedRoom[] {
       }
     } catch (error) {
       // Log error but continue parsing
-      const nameMatch = section.match(/^## (.+?)(?:\n|$)/);
+      const nameMatch = section.match(/^##+ (.+?)(?:\n|$)/);
       const roomHeader = nameMatch ? nameMatch[1] : 'Unknown';
       console.warn(`Warning: Failed to parse room "${roomHeader}": ${error}`);
     }
@@ -284,8 +296,8 @@ export function parseRooms(markdownContent: string): ParsedRoom[] {
  * Parse a single room section
  */
 function parseRoomSection(section: string): ParsedRoom | null {
-  // Extract room header
-  const headerMatch = section.match(/^## (.+?)(?:\n|$)/);
+  // Extract room header - support both ## and ### formats
+  const headerMatch = section.match(/^##+ (.+?)(?:\n|$)/);
   if (!headerMatch) {
     return null;
   }

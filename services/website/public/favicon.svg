@@ -1,45 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <defs>
-    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#e6b800"/>
-      <stop offset="50%" style="stop-color:#c9a227"/>
-      <stop offset="100%" style="stop-color:#8b6914"/>
-    </linearGradient>
-    <linearGradient id="darkGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" style="stop-color:#2d2d2d"/>
-      <stop offset="100%" style="stop-color:#1a1a1a"/>
-    </linearGradient>
-  </defs>
+  <!-- Background -->
+  <rect width="32" height="32" fill="#1a1a2e" rx="4"/>
   
-  <!-- Background circle -->
-  <circle cx="16" cy="16" r="15" fill="url(#darkGradient)" stroke="url(#goldGradient)" stroke-width="1.5"/>
+  <!-- Dungeon door frame -->
+  <rect x="8" y="6" width="16" height="22" fill="#16213e" stroke="#e94560" stroke-width="1"/>
   
-  <!-- Dungeon door arch -->
-  <path 
-    d="M10 24 L10 12 Q16 6 22 12 L22 24" 
-    fill="none" 
-    stroke="url(#goldGradient)" 
-    stroke-width="2" 
-    stroke-linecap="round"
-  />
+  <!-- Door arch -->
+  <path d="M8 6 Q16 2 24 6" fill="none" stroke="#e94560" stroke-width="1.5"/>
   
   <!-- Door panels -->
-  <line x1="16" y1="12" x2="16" y2="24" stroke="url(#goldGradient)" stroke-width="1.5"/>
+  <rect x="10" y="10" width="5" height="8" fill="#0f3460" stroke="#e94560" stroke-width="0.5"/>
+  <rect x="17" y="10" width="5" height="8" fill="#0f3460" stroke="#e94560" stroke-width="0.5"/>
   
-  <!-- Door handles -->
-  <circle cx="14" cy="18" r="1" fill="url(#goldGradient)"/>
-  <circle cx="18" cy="18" r="1" fill="url(#goldGradient)"/>
+  <!-- Door handle/ring -->
+  <circle cx="16" cy="20" r="2" fill="none" stroke="#ffd369" stroke-width="1.5"/>
   
-  <!-- Keystone -->
-  <path 
-    d="M14 9 L16 7 L18 9" 
-    fill="none" 
-    stroke="url(#goldGradient)" 
-    stroke-width="1.5" 
-    stroke-linecap="round" 
-    stroke-linejoin="round"
-  />
+  <!-- Skull icon above door -->
+  <circle cx="16" cy="5" r="2" fill="#e94560"/>
+  <rect x="15" y="7" width="2" height="1" fill="#e94560"/>
   
-  <!-- Floor stones -->
-  <line x1="8" y1="24" x2="24" y2="24" stroke="url(#goldGradient)" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Torches -->
+  <rect x="5" y="12" width="2" height="6" fill="#ffd369"/>
+  <path d="M5 12 Q6 9 7 12" fill="#e94560"/>
+  <rect x="25" y="12" width="2" height="6" fill="#ffd369"/>
+  <path d="M25 12 Q26 9 27 12" fill="#e94560"/>
 </svg>
