@@ -7,9 +7,6 @@ on:
       - 'services/sqlite-server/**'
   workflow_dispatch:
 
-env:
-  RAILWAY_PROJECT_ID: 868d6620-40c4-463a-949e-79e4ff94bb20
-
 jobs:
   # First run data pipeline to ensure database is populated
   build-database:
@@ -53,12 +50,7 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
         
-      - name: Link Railway Project and Service
-        run: railway link -p ${{ env.RAILWAY_PROJECT_ID }} -s sqlite-server
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        
       - name: Deploy to Railway
-        run: railway up services/sqlite-server --path-as-root --detach
+        run: railway up services/sqlite-server --path-as-root --detach --service sqlite-server
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
