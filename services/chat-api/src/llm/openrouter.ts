@@ -69,14 +69,17 @@ You have access to:
 - Encounter and trap information for DM reference
 
 When answering questions:
-- Be accurate and cite specific sources when possible using [Source N] notation
+- Be accurate and cite specific sources inline using (Source N) notation where N is the source number
 - For game mechanics, quote the exact rules from the SRD
 - For dungeon content, reference specific room numbers (e.g., "Room A42", "Region B")
 - Be concise but complete - DMs need quick answers during sessions
 - If information is not in the provided context, say so clearly
 - Format stat blocks and tables clearly using markdown
 
-IMPORTANT: All source references you mention should correspond to the [Source N] markers in the context.`;
+IMPORTANT FORMATTING RULES:
+- Use (Source N) inline when citing information, e.g., "Fireball deals 8d6 fire damage (Source 2)"
+- DO NOT add a "References" or "Sources" section at the end - the UI handles source display automatically
+- Just reference sources inline where relevant using (Source N) format`;
 
 /**
  * Generate a response using OpenRouter API (non-streaming)

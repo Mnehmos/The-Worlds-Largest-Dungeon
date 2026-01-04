@@ -300,52 +300,64 @@ const {
 
   /* Sources - Clickable Buttons */
   .message-sources {
-    margin-top: var(--space-sm);
-    padding-top: var(--space-sm);
-    border-top: 1px solid var(--color-border-subtle);
+    margin-top: var(--space-sm, 0.5rem);
+    padding-top: var(--space-sm, 0.5rem);
+    border-top: 1px solid var(--color-border-subtle, #2a2a2a);
     font-size: 0.875rem;
-    color: var(--color-text-secondary);
+    color: var(--color-text-secondary, #b8b5b0);
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--space-xs);
+    gap: 6px;
   }
 
   .sources-label {
     font-size: 0.8rem;
-    color: var(--color-text-muted);
-    margin-right: var(--space-xs);
+    color: var(--color-text-muted, #6b6965);
+    margin-right: 4px;
   }
 
   .source-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 24px;
-    height: 24px;
-    padding: 0 8px;
-    background: var(--color-accent-primary);
-    color: var(--color-bg-primary);
-    border: none;
-    border-radius: var(--radius-sm);
-    font-size: 0.75rem;
+    min-width: 28px;
+    height: 28px;
+    padding: 0 10px;
+    background: #c9a227;
+    color: #0d0d0d;
+    border: 2px solid #e6b800;
+    border-radius: 4px;
+    font-size: 0.8rem;
     font-weight: 700;
-    font-family: var(--font-mono);
+    font-family: 'Consolas', monospace;
     cursor: pointer;
-    transition: transform var(--transition-fast), background-color var(--transition-fast);
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   }
 
   .source-btn:hover {
-    background: var(--color-accent-secondary);
-    transform: scale(1.1);
+    background: #e6b800;
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: 0 4px 8px rgba(201, 162, 39, 0.4);
+  }
+
+  .source-btn:active {
+    transform: scale(0.95);
   }
 
   .source-btn.rag {
-    background: var(--color-accent-secondary);
+    background: #8b6914;
+    border-color: #c9a227;
+  }
+
+  .source-btn.rag:hover {
+    background: #a57d1a;
   }
 
   .source-btn.sqlite {
-    background: var(--color-accent-primary);
+    background: #c9a227;
+    border-color: #e6b800;
   }
 
   /* Tool Used Badge */
