@@ -23,8 +23,11 @@ dist/
 # Generated data files (too large for GitHub)
 services/rag-server/data/vectors.jsonl
 services/rag-server/data/chunks.jsonl
-services/sqlite-server/data/*.db
 tools/data-pipeline/output/*.json
+
+# SQLite database exceptions
+services/sqlite-server/data/*.db
+!services/sqlite-server/data/wld.db
 
 # Environment files
 .env
