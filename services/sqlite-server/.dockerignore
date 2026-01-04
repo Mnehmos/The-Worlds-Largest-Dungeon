@@ -10,7 +10,6 @@ dist
 .env*
 .git
 .gitignore
-tsconfig.json
 
 # Test files
 *.test.ts
