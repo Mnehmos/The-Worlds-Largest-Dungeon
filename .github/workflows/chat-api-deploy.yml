@@ -7,9 +7,6 @@ on:
       - 'services/chat-api/**'
   workflow_dispatch:
 
-env:
-  RAILWAY_PROJECT_ID: 868d6620-40c4-463a-949e-79e4ff94bb20
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -19,12 +16,7 @@ jobs:
       - name: Install Railway CLI
         run: npm install -g @railway/cli
         
-      - name: Link Railway Project and Service
-        run: railway link -p ${{ env.RAILWAY_PROJECT_ID }} -s The-Worlds-Largest-Dungeon
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        
       - name: Deploy to Railway
-        run: railway up services/chat-api --path-as-root --detach
+        run: railway up services/chat-api --path-as-root --detach --service The-Worlds-Largest-Dungeon
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
