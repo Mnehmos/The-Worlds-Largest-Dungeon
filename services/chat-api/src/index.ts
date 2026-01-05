@@ -12,6 +12,7 @@
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 
 import { chatRouter } from './routes/chat.js';
 import { checkRagHealth, getRagServerUrl } from './services/rag-client.js';
@@ -23,11 +24,52 @@ const app = express();
 const PORT = parseInt(process.env.PORT || '8080', 10);
 
 // ============================================================================
+// Security Configuration
+// ============================================================================
+
+// Allowed origins for CORS (comma-separated in env var, or defaults)
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+  : [
+      'https://mnehmos.github.io',
+      'http://localhost:4321',
+      'http://localhost:3000',
+    ];
+
+console.log('[Security] Allowed CORS origins:', ALLOWED_ORIGINS);
+
+// Rate limiting: 30 requests per minute per IP
+const chatLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30,
+  message: {
+    error: 'Too many requests',
+    message: 'Please wait before making more requests',
+    retryAfter: 60,
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// ============================================================================
 // Middleware
 // ============================================================================
 
-// CORS - allow all origins for API access
-app.use(cors());
+// CORS - restrict to allowed origins
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (server-to-server, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`[CORS] Blocked request from: ${origin}`);
+      callback(new Error('CORS: Origin not allowed'));
+    }
+  },
+  credentials: true,
+}));
 
 // JSON body parsing
 app.use(express.json({ limit: '1mb' }));
@@ -38,6 +80,9 @@ app.use((req: Request, _res: Response, next: NextFunction) => {
   console.log(`[${timestamp}] ${req.method} ${req.path}`);
   next();
 });
+
+// Apply rate limiting to chat endpoint
+app.use('/chat', chatLimiter);
 
 // ============================================================================
 // Health Check Endpoint
