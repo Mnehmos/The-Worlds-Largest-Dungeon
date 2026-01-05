@@ -4,7 +4,31 @@ interface Props {
   description?: string;
 }
 
-const { title, description = "The World's Largest Dungeon - AI-powered D&D companion" } = Astro.props;
+const {
+  title,
+  description = "The World's Largest Dungeon - AI-powered D&D companion with SRD 5.2 Rules and RAG Architecture.",
+} = Astro.props;
+
+// JSON-LD for Software Application
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "The World's Largest Dungeon AI",
+  applicationCategory: "GameApplication",
+  operatingSystem: "Web",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  description: description,
+  author: {
+    "@type": "Person",
+    name: "Mnehmos",
+    url: "https://mnehmos.github.io/Mnehmos/",
+  },
+  keywords: "D&D, 5e, SRD 5.2, Dungeon Master, AI, RAG, Chatbot, RPG",
+};
 ---
 
 <!doctype html>
@@ -13,14 +37,50 @@ const { title, description = "The World's Largest Dungeon - AI-powered D&D compa
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
-    <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
+    <meta
+      name="keywords"
+      content="Dungeons & Dragons, D&D 5e, SRD 5.2, AI Dungeon Master, RAG, Retrieval Augmented Generation, Vario Automation, Index Foundry, Mnehmos"
+    />
+    <meta name="author" content="Mnehmos" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content={Astro.url} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta
+      property="og:image"
+      content={`${import.meta.env.BASE_URL}og-image.jpg`}
+    />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={Astro.url} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    <meta
+      property="twitter:image"
+      content={`${import.meta.env.BASE_URL}og-image.jpg`}
+    />
+
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href={`${import.meta.env.BASE_URL}favicon.svg`}
+    />
     <meta name="generator" content={Astro.generator} />
-    
+
+    <!-- SEO JSON-LD -->
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
     <!-- Preconnect to Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet" />
-    
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap"
+      rel="stylesheet"
+    />
+
     <title>{title}</title>
   </head>
   <body>
@@ -30,15 +90,63 @@ const { title, description = "The World's Largest Dungeon - AI-powered D&D compa
           <span class="logo-icon">⚔️</span>
           <h1>The World's Largest Dungeon</h1>
         </div>
-        <p class="tagline">AI-Powered Dungeon Master Companion</p>
+        <p class="tagline">
+          AI-Powered Dungeon Master Companion • SRD 5.2 • RAG Architecture
+        </p>
       </header>
-      
+
       <main class="app-main">
         <slot />
       </main>
-      
+
       <footer class="app-footer">
-        <p>Powered by RAG • D&D 5e SRD Content</p>
+        <div class="footer-content">
+          <p>© {new Date().getFullYear()} The World's Largest Dungeon.</p>
+          <div class="portfolio-links">
+            <span
+              >Powered by <a
+                href="https://vario.automation"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="portfolio-link">Index Foundry</a
+              ></span
+            >
+            <span class="divider">•</span>
+            <span
+              >Built by <a
+                href="https://mnehmos.github.io/Mnehmos/"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="portfolio-link">Mnehmos</a
+              ></span
+            >
+            <a
+              href="https://github.com/Mnehmos"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="social-icon"
+              aria-label="GitHub"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                viewBox="0 0 16 16"
+              >
+                <path
+                  d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+                ></path>
+              </svg>
+            </a>
+          </div>
+          <p class="legal-text">
+            This content includes material from the System Reference Document
+            5.1 ("SRD 5.1") by Wizards of the Coast LLC and is available under
+            the terms of the Creative Commons Attribution 4.0 International
+            License (CC-BY 4.0).
+          </p>
+        </div>
       </footer>
     </div>
   </body>
@@ -46,51 +154,53 @@ const { title, description = "The World's Largest Dungeon - AI-powered D&D compa
 
 <style is:global>
   /* CSS Reset */
-  *, *::before, *::after {
+  *,
+  *::before,
+  *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
   }
 
-  /* CSS Custom Properties - Dark Fantasy Theme */
+  /* CSS Custom Properties - Dark Fantasy Mnehmos Theme */
   :root {
     /* Colors - Dark dungeon palette */
     --color-bg-primary: #0d0d0d;
-    --color-bg-secondary: #1a1a1a;
-    --color-bg-tertiary: #252525;
+    --color-bg-secondary: #1c1917; /* Stone 900 */
+    --color-bg-tertiary: #292524; /* Stone 800 */
     --color-bg-elevated: #2d2d2d;
-    
-    /* Accent colors - Gold and amber for D&D feel */
-    --color-accent-primary: #c9a227;
-    --color-accent-secondary: #8b6914;
-    --color-accent-hover: #e6b800;
-    
+
+    /* Accent colors - Copper/Gold */
+    --color-accent-primary: #b87333; /* Copper */
+    --color-accent-secondary: #d4956a; /* Copper Light */
+    --color-accent-hover: #e6b800; /* Gold Hover */
+
     /* Text colors */
-    --color-text-primary: #e8e6e3;
-    --color-text-secondary: #b8b5b0;
-    --color-text-muted: #6b6965;
-    
+    --color-text-primary: #e7e5e4; /* Stone 200 */
+    --color-text-secondary: #d6d3d1; /* Stone 300 */
+    --color-text-muted: #a8a29e; /* Stone 400 */
+
     /* Semantic colors */
     --color-success: #4a9c6d;
     --color-error: #c94444;
     --color-info: #5b8dd9;
     --color-warning: #d4a84b;
-    
+
     /* Border colors */
-    --color-border: #3d3d3d;
-    --color-border-subtle: #2a2a2a;
-    
+    --color-border: #44403c; /* Stone 700 */
+    --color-border-subtle: #292524;
+
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
     --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
-    --shadow-glow: 0 0 20px rgba(201, 162, 39, 0.2);
-    
+    --shadow-glow: 0 0 20px rgba(184, 115, 51, 0.2);
+
     /* Typography */
-    --font-display: 'Cinzel', serif;
-    --font-body: 'Crimson Text', Georgia, serif;
-    --font-mono: 'Consolas', 'Monaco', monospace;
-    
+    --font-display: "Cinzel", serif;
+    --font-body: "Crimson Text", Georgia, serif;
+    --font-mono: "Consolas", "Monaco", monospace;
+
     /* Spacing */
     --space-xs: 0.25rem;
     --space-sm: 0.5rem;
@@ -98,12 +208,12 @@ const { title, description = "The World's Largest Dungeon - AI-powered D&D compa
     --space-lg: 1.5rem;
     --space-xl: 2rem;
     --space-2xl: 3rem;
-    
+
     /* Border radius */
     --radius-sm: 4px;
     --radius-md: 8px;
     --radius-lg: 12px;
-    
+
     /* Transitions */
     --transition-fast: 150ms ease;
     --transition-normal: 250ms ease;
@@ -121,14 +231,27 @@ const { title, description = "The World's Largest Dungeon - AI-powered D&D compa
     line-height: 1.6;
     color: var(--color-text-primary);
     background-color: var(--color-bg-primary);
-    background-image: 
-      radial-gradient(ellipse at top, rgba(201, 162, 39, 0.03) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom, rgba(139, 105, 20, 0.02) 0%, transparent 50%);
+    background-image:
+      radial-gradient(
+        ellipse at top,
+        rgba(184, 115, 51, 0.03) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        ellipse at bottom,
+        rgba(139, 105, 20, 0.02) 0%,
+        transparent 50%
+      );
     min-height: 100vh;
   }
 
   /* Typography */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-display);
     font-weight: 600;
     color: var(--color-text-primary);
@@ -143,7 +266,6 @@ const { title, description = "The World's Largest Dungeon - AI-powered D&D compa
   h2 {
     font-size: 1.5rem;
   }
-
   h3 {
     font-size: 1.25rem;
   }
@@ -160,6 +282,7 @@ const { title, description = "The World's Largest Dungeon - AI-powered D&D compa
 
   a:hover {
     color: var(--color-accent-hover);
+    text-decoration: underline;
   }
 
   /* Scrollbar styling */
@@ -238,7 +361,11 @@ const { title, description = "The World's Largest Dungeon - AI-powered D&D compa
   }
 
   .logo h1 {
-    background: linear-gradient(135deg, var(--color-accent-primary) 0%, var(--color-accent-hover) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-accent-primary) 0%,
+      var(--color-accent-hover) 100%
+    );
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -268,10 +395,48 @@ const { title, description = "The World's Largest Dungeon - AI-powered D&D compa
     margin-top: var(--space-lg);
   }
 
-  .app-footer p {
-    font-size: 0.875rem;
+  .footer-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .portfolio-links {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: center;
+    margin: 0.5rem 0;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
     color: var(--color-text-muted);
-    margin: 0;
+  }
+
+  .portfolio-link {
+    color: var(--color-accent-primary);
+    font-weight: 600;
+  }
+
+  .divider {
+    color: var(--color-border);
+  }
+
+  .social-icon {
+    color: var(--color-text-muted);
+    transition: color 0.2s;
+  }
+
+  .social-icon:hover {
+    color: var(--color-text-primary);
+  }
+
+  .legal-text {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    max-width: 600px;
+    margin: 0 auto;
+    opacity: 0.7;
   }
 
   /* Responsive */
@@ -297,6 +462,14 @@ const { title, description = "The World's Largest Dungeon - AI-powered D&D compa
 
     .logo h1 {
       font-size: 1.25rem;
+    }
+
+    .portfolio-links {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+    .divider {
+      display: none;
     }
   }
 </style>
