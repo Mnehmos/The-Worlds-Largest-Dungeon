@@ -270,10 +270,14 @@ async function fetchContext(
       switch (endpoint) {
         case 'spells':
           if (!classification.extractedEntities.roomId) {
+            // Use extracted spell name if available, otherwise use cleaned search terms
+            const spellSearch = classification.extractedEntities.spellName 
+              || classification.extractedEntities.searchTerms 
+              || query;
             promises.push(
               querySpells({
                 level: classification.extractedEntities.level,
-                search: query,
+                search: spellSearch,
                 limit: 5,
               })
                 .then(results => { sqliteResults.push(...results); })
@@ -284,10 +288,14 @@ async function fetchContext(
           
         case 'monsters':
           if (!classification.extractedEntities.roomId) {
+            // Use extracted monster name if available, otherwise use cleaned search terms
+            const monsterSearch = classification.extractedEntities.monsterName 
+              || classification.extractedEntities.searchTerms 
+              || query;
             promises.push(
               queryMonsters({
                 cr: classification.extractedEntities.cr?.toString(),
-                search: query,
+                search: monsterSearch,
                 limit: 5,
               })
                 .then(results => { sqliteResults.push(...results); })
@@ -297,9 +305,11 @@ async function fetchContext(
           break;
           
         case 'equipment':
+          // Use cleaned search terms for better matching
+          const equipSearch = classification.extractedEntities.searchTerms || query;
           promises.push(
             queryEquipment({
-              search: query,
+              search: equipSearch,
               limit: 5,
             })
               .then(results => { sqliteResults.push(...results); })
@@ -309,10 +319,12 @@ async function fetchContext(
           
         case 'rooms':
           if (!classification.extractedEntities.roomId) {
+            // Use cleaned search terms for better matching
+            const roomSearch = classification.extractedEntities.searchTerms || query;
             promises.push(
               queryRooms({
                 region: classification.extractedEntities.region || userContext?.region,
-                search: query,
+                search: roomSearch,
                 limit: 5,
               })
                 .then(results => { sqliteResults.push(...results); })

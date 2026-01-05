@@ -28,6 +28,7 @@ export interface ClassificationResult {
     equipmentName?: string;
     level?: number;
     cr?: number | string;
+    searchTerms?: string;  // Cleaned search terms for SQLite queries
   };
   reasoning: string;
 }
@@ -134,6 +135,20 @@ export function classifyQuery(query: string): ClassificationResult {
   if (crMatch) {
     result.extractedEntities.cr = crMatch[1] || crMatch[2];
   }
+  
+  // Extract specific entity names for targeted SQLite search
+  const extractedSpell = extractSpellName(query);
+  if (extractedSpell) {
+    result.extractedEntities.spellName = extractedSpell;
+  }
+  
+  const extractedMonster = extractMonsterName(query);
+  if (extractedMonster) {
+    result.extractedEntities.monsterName = extractedMonster;
+  }
+  
+  // Extract generic search terms by removing common words
+  result.extractedEntities.searchTerms = extractSearchTerms(query);
   
   // Score structured indicators
   let structuredScore = 0;
@@ -278,4 +293,42 @@ export function extractMonsterName(query: string): string | undefined {
   }
   
   return undefined;
+}
+
+/**
+ * Extract search terms from a query by removing common/stop words.
+ * This improves SQLite search matching by focusing on the key terms.
+ */
+export function extractSearchTerms(query: string): string {
+  // Common words to remove (stop words)
+  const stopWords = new Set([
+    'a', 'an', 'the', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should',
+    'what', 'which', 'who', 'whom', 'how', 'when', 'where', 'why',
+    'i', 'me', 'my', 'we', 'our', 'you', 'your', 'he', 'she', 'it', 'they', 'them',
+    'this', 'that', 'these', 'those', 'am', 'of', 'for', 'to', 'in', 'on', 'at',
+    'by', 'with', 'about', 'against', 'between', 'into', 'through', 'during',
+    'before', 'after', 'above', 'below', 'from', 'up', 'down', 'out', 'off',
+    'over', 'under', 'again', 'further', 'then', 'once', 'here', 'there',
+    'all', 'each', 'few', 'more', 'most', 'other', 'some', 'such',
+    'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than', 'too', 'very',
+    'can', 'just', 'now', 'also', 'get', 'tell', 'work', 'use', 'make',
+    // D&D-specific words to remove (we want the entity name, not these)
+    'spell', 'spells', 'monster', 'monsters', 'creature', 'creatures',
+    'stats', 'stat', 'statistics', 'abilities', 'ability', 'attacks', 'attack',
+    'describe', 'explain', 'show', 'find', 'look', 'looking', 'need',
+    'room', 'rooms', 'region', 'area', 'level', 'class', 'classes',
+    'equipment', 'item', 'items', 'weapon', 'weapons', 'armor',
+    'traps', 'trap', 'treasure', 'loot',
+  ]);
+  
+  // Clean and tokenize
+  const cleaned = query
+    .toLowerCase()
+    .replace(/[^\w\s]/g, ' ')  // Remove punctuation
+    .split(/\s+/)
+    .filter(word => word.length > 1 && !stopWords.has(word))
+    .join(' ');
+  
+  return cleaned || query;  // Fallback to original if everything was filtered
 }
