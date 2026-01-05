@@ -36,6 +36,16 @@ export interface SourceReference {
  * @returns Relative path from repo root (starting with Resources/)
  */
 function normalizeToRelativePath(path: string): string {
+  // Handle raw.githubusercontent.com URLs
+  // Format: https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}
+  const rawGitHubMatch = path.match(
+    /^https?:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/[^/]+\/(.+)$/
+  );
+  if (rawGitHubMatch) {
+    // Decode any existing URL encoding to avoid double-encoding
+    return decodeURIComponent(rawGitHubMatch[1]);
+  }
+  
   // Normalize backslashes to forward slashes
   let normalized = path.replace(/\\/g, '/');
   
