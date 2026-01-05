@@ -52,7 +52,10 @@ function normalizeToRelativePath(path: string): string {
     /^https?:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/[^/]+\/(.+)$/i
   );
   if (rawGitHubMatch) {
-    return rawGitHubMatch[1];
+    // Crucial: Decode the captured path component again. 
+    // The input URL might have "SRD%205.2", but we need to return "SRD 5.2" 
+    // so that mapSourceToWebUrl doesn't re-encode it to "SRD%25205.2".
+    return decodeURIComponent(rawGitHubMatch[1]);
   }
   
   // 3. Normalize backslashes to forward slashes
@@ -80,9 +83,9 @@ function normalizeToRelativePath(path: string): string {
           const parts = urlPathMatch[1].split('/');
           if (parts.length > 3) {
              // Heuristic: Return everything after the 3rd slash (owner/repo/branch/PATH)
-             return parts.slice(3).join('/');
+             return decodeURIComponent(parts.slice(3).join('/'));
           }
-          return urlPathMatch[1];
+          return decodeURIComponent(urlPathMatch[1]);
       }
   }
   
