@@ -351,8 +351,12 @@ const {
     border-radius: 8px;
     border: 1px solid var(--stone-700);
     margin-bottom: 1rem;
-    max-height: 300px;
-    overflow-y: auto;
+    /* Removed max-height/overflow - let parent .sidebar-content scroll */
+  }
+
+  /* Apply markdown styles to sidebar source preview */
+  :global(.sidebar-source-text.markdown-content) {
+    /* Inherit chat markdown styling */
   }
 
   :global(.sidebar-source-link) {
@@ -1137,13 +1141,18 @@ const {
     if (!source) return;
 
     if (sidebarContent) {
+      // Render source text as markdown for beautiful formatting
+      const renderedText = source.text
+        ? (marked.parse(source.text) as string)
+        : "<p>No preview available.</p>";
+
       sidebarContent.innerHTML = `
         <div class="sidebar-source-meta">
           <span class="sidebar-source-badge ${source.type}">${source.type}</span>
           ${source.score !== undefined ? `<span class="sidebar-source-score">${(source.score * 100).toFixed(1)}% Match</span>` : ""}
           <div class="sidebar-source-ref">${source.reference}</div>
         </div>
-        <div class="sidebar-source-text">${source.text || "No preview available."}</div>
+        <div class="sidebar-source-text markdown-content">${renderedText}</div>
         <a href="${source.url}" target="_blank" rel="noopener noreferrer" class="sidebar-source-link">📂 View on GitHub →</a>
       `;
     }
