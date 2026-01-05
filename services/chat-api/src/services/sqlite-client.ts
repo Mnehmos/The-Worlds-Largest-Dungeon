@@ -115,20 +115,33 @@ export async function querySpells(params: {
   if (params.limit) url.searchParams.set('limit', params.limit.toString());
   if (params.offset) url.searchParams.set('offset', params.offset.toString());
   
-  const response = await fetch(url.toString());
+  console.log(`[SQLiteClient] querySpells URL: ${url.toString()}`);
   
-  if (!response.ok) {
-    throw new Error(`SQLite spells query failed: ${response.status}`);
+  try {
+    const response = await fetch(url.toString());
+    
+    console.log(`[SQLiteClient] querySpells response status: ${response.status}`);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`[SQLiteClient] querySpells error: ${response.status} - ${errorText}`);
+      throw new Error(`SQLite spells query failed: ${response.status}`);
+    }
+    
+    const data = await response.json() as PaginatedResponse<Spell>;
+    
+    console.log(`[SQLiteClient] querySpells returned ${data.data.length} spells`);
+    
+    return data.data.map(spell => ({
+      entityType: 'spells' as const,
+      data: spell,
+      source: createSqliteSourceReference('spells', spell.name),
+      formattedText: formatSpell(spell),
+    }));
+  } catch (error) {
+    console.error(`[SQLiteClient] querySpells exception:`, error);
+    throw error;
   }
-  
-  const data = await response.json() as PaginatedResponse<Spell>;
-  
-  return data.data.map(spell => ({
-    entityType: 'spells' as const,
-    data: spell,
-    source: createSqliteSourceReference('spells', spell.name),
-    formattedText: formatSpell(spell),
-  }));
 }
 
 /**
