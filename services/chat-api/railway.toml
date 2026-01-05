@@ -25,4 +25,4 @@ internalPort = 8080
 # - GITHUB_OWNER: GitHub repository owner (default: mnehmos)
 # - GITHUB_REPO: GitHub repository name (default: The-Worlds-Largest-Dungeon)
 # - GITHUB_BRANCH: GitHub branch (default: master)
-# - OPENROUTER_MODEL: LLM model to use (default: microsoft/wizardlm-2-8x22b)
+# - OPENROUTER_MODEL: LLM model to use (default: openai/gpt-oss-120b)

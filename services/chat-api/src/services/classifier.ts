@@ -97,14 +97,17 @@ export function classifyQuery(query: string): ClassificationResult {
   const lowerQuery = query.toLowerCase().trim();
   const words = lowerQuery.split(/\s+/);
   
-  // Initialize result
+  // All SQLite endpoints for comprehensive coverage
+  const ALL_ENDPOINTS: ('spells' | 'monsters' | 'equipment' | 'rooms')[] = ['spells', 'monsters', 'equipment', 'rooms'];
+  
+  // Initialize result - default to querying all sources
   const result: ClassificationResult = {
     type: 'semantic',
     confidence: 0.5,
     routing: {
       rag: true,
-      sqlite: false,
-      sqliteEndpoints: [],
+      sqlite: true,  // Always query SQLite
+      sqliteEndpoints: ALL_ENDPOINTS,  // Default to all endpoints
     },
     extractedEntities: {},
     reasoning: '',
@@ -213,11 +216,13 @@ export function classifyQuery(query: string): ClassificationResult {
     result.routing = {
       rag: true,
       sqlite: true,
-      sqliteEndpoints: detectedEntities.length > 0 ? [...new Set(detectedEntities)] : undefined,
+      sqliteEndpoints: detectedEntities.length > 0 ? [...new Set(detectedEntities)] : ALL_ENDPOINTS,
     };
-    result.reasoning = `Mixed query type (structured: ${matchedStructuredKeywords.join(', ')}, semantic: ${matchedSemanticKeywords.join(', ')}). Routing to both sources.`;
+    result.reasoning = `Mixed query type (structured: ${matchedStructuredKeywords.join(', ')}, semantic: ${matchedSemanticKeywords.join(', ')}). Routing to both sources (${detectedEntities.length > 0 ? detectedEntities.join(', ') : 'all endpoints'}).`;
     return result;
   }
+  
+  // Use ALL_ENDPOINTS defined at function start
   
   // Default to semantic (RAG) - but also include SQLite for comprehensive results
   result.type = 'semantic';
@@ -225,11 +230,11 @@ export function classifyQuery(query: string): ClassificationResult {
   result.routing = {
     rag: true,
     sqlite: true,
-    sqliteEndpoints: ['rooms'],  // Default to rooms endpoint for dungeon crawler context
+    sqliteEndpoints: ALL_ENDPOINTS,  // Query ALL endpoints for comprehensive coverage
   };
   result.reasoning = semanticScore > 0
-    ? `Semantic query detected (keywords: ${matchedSemanticKeywords.join(', ')}). Routing to both RAG and SQLite for comprehensive results.`
-    : `No strong signals detected, routing to both RAG and SQLite for comprehensive context.`;
+    ? `Semantic query detected (keywords: ${matchedSemanticKeywords.join(', ')}). Routing to both RAG and SQLite (all endpoints) for comprehensive results.`
+    : `No strong signals detected, routing to both RAG and SQLite (all endpoints) for comprehensive context.`;
   
   return result;
 }
