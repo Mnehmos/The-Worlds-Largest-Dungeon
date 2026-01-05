@@ -36,26 +36,54 @@ export interface SourceReference {
  * @returns Relative path from repo root (starting with Resources/)
  */
 function normalizeToRelativePath(path: string): string {
-  // Handle raw.githubusercontent.com URLs
+  // 1. Safe decode to handle already-encoded paths (fixes double-encoding issues)
+  let decodedPath = path;
+  try {
+    if (path.includes('%')) {
+      decodedPath = decodeURIComponent(path);
+    }
+  } catch (e) {
+    // Ignore decode errors, use original path
+  }
+
+  // 2. Handle raw.githubusercontent.com URLs
   // Format: https://raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}
-  const rawGitHubMatch = path.match(
-    /^https?:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/[^/]+\/(.+)$/
+  const rawGitHubMatch = decodedPath.match(
+    /^https?:\/\/raw\.githubusercontent\.com\/[^/]+\/[^/]+\/[^/]+\/(.+)$/i
   );
   if (rawGitHubMatch) {
-    // Decode any existing URL encoding to avoid double-encoding
-    return decodeURIComponent(rawGitHubMatch[1]);
+    return rawGitHubMatch[1];
   }
   
-  // Normalize backslashes to forward slashes
-  let normalized = path.replace(/\\/g, '/');
+  // 3. Normalize backslashes to forward slashes
+  let normalized = decodedPath.replace(/\\/g, '/');
   
-  // Remove Windows drive letter prefix (e.g., C:/, D:/)
+  // 4. Remove Windows drive letter prefix (e.g., C:/, D:/)
   normalized = normalized.replace(/^[a-zA-Z]:\//, '');
+
+  // 5. Build strict relative path locator
+  // We want to find the "Resources/" folder, but allow for case-insensitivity just in case
+  const matchIndex = normalized.toLowerCase().indexOf('resources/');
+  if (matchIndex !== -1) {
+     return normalized.substring(matchIndex);
+  }
   
-  // Find the Resources/ folder and extract from there
-  const resourcesIndex = normalized.indexOf('Resources/');
-  if (resourcesIndex !== -1) {
-    return normalized.substring(resourcesIndex);
+  // 6. Generic URL protocol stripper (Fallback if regex failed but it's still a URL)
+  // Prevents "https://..." from being treated as a relative path
+  if (normalized.match(/^https?:\/\//)) {
+      // If it's a URL but we couldn't find 'Resources/', try to guess the path by stripping the domain
+      // This is a "Hail Mary" fallback for weird RAG URLs
+      const urlPathMatch = normalized.match(/^https?:\/\/[^/]+\/(.+)$/);
+      if (urlPathMatch) {
+          // Check if there's a master/ branch segment we can skip?
+          // Assumption: If it's a repo URL, it probably has at least 2-3 preamble segments (owner/repo/branch)
+          const parts = urlPathMatch[1].split('/');
+          if (parts.length > 3) {
+             // Heuristic: Return everything after the 3rd slash (owner/repo/branch/PATH)
+             return parts.slice(3).join('/');
+          }
+          return urlPathMatch[1];
+      }
   }
   
   // Fallback: try to find common repo folders
@@ -69,7 +97,7 @@ function normalizeToRelativePath(path: string): string {
   
   // If no known prefix found, return as-is but strip any leading path segments
   // that look like user directories
-  const userDirMatch = normalized.match(/\/(?:Users|home)\/[^/]+\/[^/]+\/[^/]+\/(.+)/);
+  const userDirMatch = normalized.match(/\/(?:Users|home)\/[^/]+\/[^/]+\/[^/]+\/(.+)/i);
   if (userDirMatch) {
     return userDirMatch[1];
   }
