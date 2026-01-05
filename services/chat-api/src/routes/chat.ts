@@ -252,6 +252,19 @@ async function fetchContext(
       );
     }
     
+    // Fallback: if SQLite is enabled but no endpoints specified and no roomId, default to rooms
+    if (endpoints.length === 0 && !classification.extractedEntities.roomId) {
+      promises.push(
+        queryRooms({
+          search: query,
+          region: userContext?.region,
+          limit: 5,
+        })
+          .then(results => { sqliteResults.push(...results); })
+          .catch(error => console.error('[Chat] Fallback rooms query failed:', error))
+      );
+    }
+    
     // Query based on detected entity types
     for (const endpoint of endpoints) {
       switch (endpoint) {

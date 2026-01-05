@@ -1,10 +1,15 @@
 /**
- * Query Classifier - Determines whether queries should be routed to RAG, SQLite, or both
- * 
- * Classification Rules:
- * - Structured queries (lists, specific lookups) → SQLite
- * - Semantic queries (explanations, lore, gameplay) → RAG
- * - Hybrid queries (room lookups with context) → Both
+ * Query Classifier - Determines query type and routes to both RAG and SQLite
+ *
+ * Classification Types (for analytics/debugging):
+ * - 'structured': Lists, lookups, entity queries (keywords: list, all, find, etc.)
+ * - 'semantic': Explanations, lore, gameplay (keywords: how does, explain, etc.)
+ * - 'hybrid': Room/region lookups with context
+ *
+ * Routing Behavior:
+ * - ALL queries route to BOTH RAG and SQLite for comprehensive results
+ * - The classification type is preserved for analytics and debugging
+ * - SQLite endpoints are selected based on detected entities, defaulting to 'rooms'
  */
 
 export interface ClassificationResult {
@@ -193,11 +198,11 @@ export function classifyQuery(query: string): ClassificationResult {
     result.type = 'structured';
     result.confidence = Math.min(0.95, 0.6 + structuredScore * 0.1);
     result.routing = {
-      rag: false,
+      rag: true,
       sqlite: true,
       sqliteEndpoints: detectedEntities.length > 0 ? [...new Set(detectedEntities)] : ['spells', 'monsters'],
     };
-    result.reasoning = `Structured query detected (keywords: ${matchedStructuredKeywords.join(', ')}). Routing to SQLite for ${detectedEntities.join(', ') || 'entity lookup'}.`;
+    result.reasoning = `Structured query detected (keywords: ${matchedStructuredKeywords.join(', ')}). Routing to both RAG and SQLite for ${detectedEntities.join(', ') || 'entity lookup'}.`;
     return result;
   }
   
@@ -214,16 +219,17 @@ export function classifyQuery(query: string): ClassificationResult {
     return result;
   }
   
-  // Default to semantic (RAG)
+  // Default to semantic (RAG) - but also include SQLite for comprehensive results
   result.type = 'semantic';
   result.confidence = semanticScore > 0 ? Math.min(0.9, 0.6 + semanticScore * 0.1) : 0.6;
   result.routing = {
     rag: true,
-    sqlite: false,
+    sqlite: true,
+    sqliteEndpoints: ['rooms'],  // Default to rooms endpoint for dungeon crawler context
   };
   result.reasoning = semanticScore > 0
-    ? `Semantic query detected (keywords: ${matchedSemanticKeywords.join(', ')}). Routing to RAG for contextual information.`
-    : `No strong signals detected, defaulting to RAG for general context search.`;
+    ? `Semantic query detected (keywords: ${matchedSemanticKeywords.join(', ')}). Routing to both RAG and SQLite for comprehensive results.`
+    : `No strong signals detected, routing to both RAG and SQLite for comprehensive context.`;
   
   return result;
 }
