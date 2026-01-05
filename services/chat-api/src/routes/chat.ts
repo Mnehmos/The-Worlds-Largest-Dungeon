@@ -274,13 +274,17 @@ async function fetchContext(
             const spellSearch = classification.extractedEntities.spellName 
               || classification.extractedEntities.searchTerms 
               || query;
+            console.log(`[Chat] Spells search: "${spellSearch}" (spellName: ${classification.extractedEntities.spellName}, searchTerms: ${classification.extractedEntities.searchTerms})`);
             promises.push(
               querySpells({
                 level: classification.extractedEntities.level,
                 search: spellSearch,
                 limit: 5,
               })
-                .then(results => { sqliteResults.push(...results); })
+                .then(results => { 
+                  console.log(`[Chat] Spells query returned ${results.length} results`);
+                  sqliteResults.push(...results); 
+                })
                 .catch(error => console.error('[Chat] Spells query failed:', error))
             );
           }

@@ -258,17 +258,29 @@ export function classifyQuery(query: string): ClassificationResult {
  * Extract a potential spell name from the query
  */
 export function extractSpellName(query: string): string | undefined {
-  // Common spell name patterns
+  // Common spell name patterns - use non-greedy and word boundaries
   const patterns = [
-    /cast(?:ing)?\s+(?:the\s+)?["']?([a-z\s]+)["']?\s*(?:spell)?/i,
-    /(?:the\s+)?["']?([a-z\s]+)["']?\s+spell/i,
-    /spell\s+(?:called\s+)?["']?([a-z\s]+)["']?/i,
+    // "How does Fireball work" / "How does the Fireball spell work"
+    /how\s+(?:does|do)\s+(?:the\s+)?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:spell\s+)?work/i,
+    // "casting Fireball" / "cast the Fireball spell"
+    /cast(?:ing)?\s+(?:the\s+)?["']?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)["']?\s*(?:spell)?/i,
+    // "the Fireball spell" / "Fireball spell"
+    /(?:the\s+)?["']?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)["']?\s+spell\b/i,
+    // "spell called Fireball"
+    /spell\s+(?:called|named)\s+["']?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)["']?/i,
+    // "about Fireball" / "explain Fireball"
+    /(?:about|explain|describe)\s+(?:the\s+)?["']?([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)["']?/i,
   ];
   
   for (const pattern of patterns) {
     const match = query.match(pattern);
     if (match?.[1]) {
-      return match[1].trim();
+      const spellName = match[1].trim();
+      // Only return if it looks like a spell name (capitalized word(s))
+      if (spellName.length > 2 && spellName.length < 50) {
+        console.log(`[Classifier] Extracted spell name: "${spellName}" from query: "${query}"`);
+        return spellName;
+      }
     }
   }
   
