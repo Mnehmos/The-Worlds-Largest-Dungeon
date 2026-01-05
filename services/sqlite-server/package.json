@@ -8,7 +8,10 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "lint": "eslint src/**/*.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed:srd": "tsx scripts/seed-srd.ts",
+    "seed:wld": "tsx scripts/seed-wld.ts",
+    "seed:all": "npm run seed:srd && npm run seed:wld"
   },
   "keywords": [
     "dnd",
