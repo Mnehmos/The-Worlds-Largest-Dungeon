@@ -17,6 +17,7 @@ import rateLimit from 'express-rate-limit';
 import { chatRouter } from './routes/chat.js';
 import { checkRagHealth, getRagServerUrl } from './services/rag-client.js';
 import { checkSqliteHealth, getSqliteServerUrl } from './services/sqlite-client.js';
+import { checkSrdHealth } from './services/srd-client.js';
 import { checkOpenRouterHealth, getOpenRouterConfig } from './llm/openrouter.js';
 import { getGitHubConfig } from './utils/source-mapper.js';
 
@@ -93,11 +94,13 @@ interface HealthResponse {
   services: {
     rag: boolean;
     sqlite: boolean;
+    srd: boolean;
     llm: boolean;
   };
   config: {
     ragServerUrl: string;
     sqliteServerUrl: string;
+    srdApiUrl: string;
     openrouterModel: string;
     openrouterConfigured: boolean;
     gitHub: {
@@ -114,15 +117,17 @@ app.get('/health', async (_req: Request, res: Response) => {
   const startTime = Date.now();
   
   // Check all services in parallel
-  const [ragHealth, sqliteHealth, llmHealth] = await Promise.all([
+  const [ragHealth, sqliteHealth, srdHealth, llmHealth] = await Promise.all([
     checkRagHealth(),
     checkSqliteHealth(),
+    checkSrdHealth(),
     checkOpenRouterHealth(),
   ]);
   
   const services = {
     rag: ragHealth !== null,
     sqlite: sqliteHealth !== null,
+    srd: srdHealth,
     llm: llmHealth.accessible,
   };
   
@@ -148,6 +153,7 @@ app.get('/health', async (_req: Request, res: Response) => {
     config: {
       ragServerUrl: getRagServerUrl(),
       sqliteServerUrl: getSqliteServerUrl(),
+      srdApiUrl: 'https://www.dnd5eapi.co/api/2014',
       openrouterModel: openRouterConfig.model,
       openrouterConfigured: openRouterConfig.apiKeyConfigured,
       gitHub: gitHubConfig,

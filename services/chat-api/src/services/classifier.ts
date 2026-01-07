@@ -19,6 +19,8 @@ export interface ClassificationResult {
     rag: boolean;
     sqlite: boolean;
     sqliteEndpoints?: ('spells' | 'monsters' | 'equipment' | 'rooms')[];
+    srd: boolean;  // Whether to query 5e-srd-api
+    srdEndpoints?: ('spells' | 'monsters' | 'classes' | 'races')[];
   };
   extractedEntities: {
     roomId?: string;
@@ -26,6 +28,9 @@ export interface ClassificationResult {
     spellName?: string;
     monsterName?: string;
     equipmentName?: string;
+    className?: string;  // D&D class name (fighter, wizard, etc.)
+    raceName?: string;   // D&D race name (elf, dwarf, etc.)
+    classLevel?: number; // Class level for feature lookup
     level?: number;
     cr?: number | string;
     searchTerms?: string;  // Cleaned search terms for SQLite queries
@@ -59,6 +64,29 @@ const ENTITY_KEYWORDS = {
   equipment: ['equipment', 'item', 'items', 'weapon', 'weapons', 'armor', 'armour', 'tool', 'tools', 'gear'],
   rooms: ['room', 'rooms', 'chamber', 'chambers', 'area', 'corridor', 'hallway'],
 };
+
+// Entity types that map to 5e-srd-api endpoints
+const SRD_KEYWORDS = {
+  classes: ['class', 'classes', 'fighter', 'wizard', 'rogue', 'cleric', 'paladin', 'ranger', 'barbarian', 
+            'bard', 'druid', 'monk', 'sorcerer', 'warlock', 'feature', 'features', 'subclass', 'subclasses',
+            'proficiency', 'proficiencies', 'multiclass', 'multiclassing'],
+  races: ['race', 'races', 'elf', 'dwarf', 'human', 'halfling', 'gnome', 'half-elf', 'half-orc', 'tiefling',
+          'dragonborn', 'trait', 'traits', 'subrace', 'subraces', 'racial'],
+};
+
+// D&D class names for extraction
+const CLASS_NAMES = [
+  'barbarian', 'bard', 'cleric', 'druid', 'fighter', 'monk',
+  'paladin', 'ranger', 'rogue', 'sorcerer', 'warlock', 'wizard',
+];
+
+// D&D race names for extraction  
+const RACE_NAMES = [
+  'elf', 'dwarf', 'human', 'halfling', 'gnome', 'half-elf', 'half-orc', 
+  'tiefling', 'dragonborn', 'high elf', 'wood elf', 'dark elf', 'drow',
+  'hill dwarf', 'mountain dwarf', 'lightfoot halfling', 'stout halfling',
+  'forest gnome', 'rock gnome',
+];
 
 // Patterns for extracting specific identifiers
 const ROOM_ID_PATTERN = /\b([A-D])[-\s]?(\d{1,3})\b/i;
@@ -109,6 +137,7 @@ export function classifyQuery(query: string): ClassificationResult {
       rag: true,
       sqlite: true,  // Always query SQLite
       sqliteEndpoints: ALL_ENDPOINTS,  // Default to all endpoints
+      srd: false,    // SRD routing determined below
     },
     extractedEntities: {},
     reasoning: '',
@@ -149,6 +178,26 @@ export function classifyQuery(query: string): ClassificationResult {
   
   // Extract generic search terms by removing common words
   result.extractedEntities.searchTerms = extractSearchTerms(query);
+  
+  // Extract class and race names for SRD routing
+  const extractedClass = extractClassName(lowerQuery);
+  if (extractedClass) {
+    result.extractedEntities.className = extractedClass;
+  }
+  
+  const extractedRace = extractRaceName(lowerQuery);
+  if (extractedRace) {
+    result.extractedEntities.raceName = extractedRace;
+  }
+  
+  // Extract class level for feature queries (e.g., "level 3 fighter")
+  const classLevelMatch = lowerQuery.match(/level\s+(\d+)\s+(\w+)|(?:^|\s)(\w+)\s+level\s+(\d+)/i);
+  if (classLevelMatch) {
+    const level = parseInt(classLevelMatch[1] || classLevelMatch[4], 10);
+    if (level >= 1 && level <= 20) {
+      result.extractedEntities.classLevel = level;
+    }
+  }
   
   // Score structured indicators
   let structuredScore = 0;
@@ -193,6 +242,7 @@ export function classifyQuery(query: string): ClassificationResult {
       rag: true,
       sqlite: true,
       sqliteEndpoints: ['rooms'],
+      srd: false,
     };
     result.reasoning = `Query mentions specific room ${result.extractedEntities.roomId}, routing to both RAG for context and SQLite for structured room data.`;
     return result;
@@ -206,9 +256,34 @@ export function classifyQuery(query: string): ClassificationResult {
       rag: true,
       sqlite: true,
       sqliteEndpoints: ['rooms'],
+      srd: false,
     };
     result.reasoning = `Query mentions Region ${result.extractedEntities.region}, routing to both RAG for lore and SQLite for room listings.`;
     return result;
+  }
+  
+  // Detect SRD-specific queries (class features, race traits, etc.)
+  const srdEndpoints: ('spells' | 'monsters' | 'classes' | 'races')[] = [];
+  let srdScore = 0;
+  
+  for (const [endpointType, keywords] of Object.entries(SRD_KEYWORDS)) {
+    for (const keyword of keywords) {
+      if (words.includes(keyword) || lowerQuery.includes(keyword)) {
+        srdEndpoints.push(endpointType as 'classes' | 'races');
+        srdScore += 1;
+        break;
+      }
+    }
+  }
+  
+  // If class or race detected, add to SRD routing
+  if (result.extractedEntities.className) {
+    if (!srdEndpoints.includes('classes')) srdEndpoints.push('classes');
+    srdScore += 2;
+  }
+  if (result.extractedEntities.raceName) {
+    if (!srdEndpoints.includes('races')) srdEndpoints.push('races');
+    srdScore += 2;
   }
   
   // Strong structured indicators
@@ -219,8 +294,10 @@ export function classifyQuery(query: string): ClassificationResult {
       rag: true,
       sqlite: true,
       sqliteEndpoints: detectedEntities.length > 0 ? [...new Set(detectedEntities)] : ['spells', 'monsters'],
+      srd: srdScore > 0,
+      srdEndpoints: srdScore > 0 ? [...new Set(srdEndpoints)] : undefined,
     };
-    result.reasoning = `Structured query detected (keywords: ${matchedStructuredKeywords.join(', ')}). Routing to both RAG and SQLite for ${detectedEntities.join(', ') || 'entity lookup'}.`;
+    result.reasoning = `Structured query detected (keywords: ${matchedStructuredKeywords.join(', ')}). Routing to both RAG and SQLite for ${detectedEntities.join(', ') || 'entity lookup'}${srdScore > 0 ? ', plus 5e SRD for ' + srdEndpoints.join(', ') : ''}.`;
     return result;
   }
   
@@ -232,8 +309,10 @@ export function classifyQuery(query: string): ClassificationResult {
       rag: true,
       sqlite: true,
       sqliteEndpoints: detectedEntities.length > 0 ? [...new Set(detectedEntities)] : ALL_ENDPOINTS,
+      srd: srdScore > 0,
+      srdEndpoints: srdScore > 0 ? [...new Set(srdEndpoints)] : undefined,
     };
-    result.reasoning = `Mixed query type (structured: ${matchedStructuredKeywords.join(', ')}, semantic: ${matchedSemanticKeywords.join(', ')}). Routing to both sources (${detectedEntities.length > 0 ? detectedEntities.join(', ') : 'all endpoints'}).`;
+    result.reasoning = `Mixed query type (structured: ${matchedStructuredKeywords.join(', ')}, semantic: ${matchedSemanticKeywords.join(', ')}). Routing to both sources (${detectedEntities.length > 0 ? detectedEntities.join(', ') : 'all endpoints'})${srdScore > 0 ? ', plus 5e SRD' : ''}.`;
     return result;
   }
   
@@ -246,10 +325,12 @@ export function classifyQuery(query: string): ClassificationResult {
     rag: true,
     sqlite: true,
     sqliteEndpoints: ALL_ENDPOINTS,  // Query ALL endpoints for comprehensive coverage
+    srd: srdScore > 0,
+    srdEndpoints: srdScore > 0 ? [...new Set(srdEndpoints)] : undefined,
   };
   result.reasoning = semanticScore > 0
-    ? `Semantic query detected (keywords: ${matchedSemanticKeywords.join(', ')}). Routing to both RAG and SQLite (all endpoints) for comprehensive results.`
-    : `No strong signals detected, routing to both RAG and SQLite (all endpoints) for comprehensive context.`;
+    ? `Semantic query detected (keywords: ${matchedSemanticKeywords.join(', ')}). Routing to both RAG and SQLite${srdScore > 0 ? ', plus 5e SRD' : ''}.`
+    : `No strong signals detected, routing to both RAG and SQLite for comprehensive context${srdScore > 0 ? ', plus 5e SRD' : ''}.`;
   
   return result;
 }
@@ -343,4 +424,40 @@ export function extractSearchTerms(query: string): string {
     .join(' ');
   
   return cleaned || query;  // Fallback to original if everything was filtered
+}
+
+/**
+ * Extract a D&D class name from the query
+ */
+export function extractClassName(query: string): string | undefined {
+  const lowerQuery = query.toLowerCase();
+  
+  // Check for explicit class name matches
+  for (const className of CLASS_NAMES) {
+    if (lowerQuery.includes(className)) {
+      console.log(`[Classifier] Extracted class name: "${className}" from query`);
+      return className;
+    }
+  }
+  
+  return undefined;
+}
+
+/**
+ * Extract a D&D race name from the query
+ */
+export function extractRaceName(query: string): string | undefined {
+  const lowerQuery = query.toLowerCase();
+  
+  // Check for explicit race name matches (check multi-word races first)
+  const sortedRaces = [...RACE_NAMES].sort((a, b) => b.length - a.length);
+  
+  for (const raceName of sortedRaces) {
+    if (lowerQuery.includes(raceName)) {
+      console.log(`[Classifier] Extracted race name: "${raceName}" from query`);
+      return raceName;
+    }
+  }
+  
+  return undefined;
 }

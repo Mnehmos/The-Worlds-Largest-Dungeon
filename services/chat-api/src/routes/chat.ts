@@ -21,6 +21,15 @@ import {
   buildSqliteContext,
   type ProcessedSqliteResult,
 } from '../services/sqlite-client.js';
+import {
+  getSrdSpell,
+  getSrdMonster,
+  getSrdClass,
+  getSrdRace,
+  getSrdClassLevel,
+  buildSrdContext,
+  type ProcessedSrdResult,
+} from '../services/srd-client.js';
 import { generateResponse, generateStreamingResponse, type Message } from '../llm/openrouter.js';
 import type { SourceReference } from '../utils/source-mapper.js';
 
@@ -44,7 +53,7 @@ export interface ChatResponse {
   answer: string;
   sources: SourceReference[];
   query_type: 'semantic' | 'structured' | 'hybrid';
-  tool_used: 'sqlite' | 'rag' | 'both' | 'none';  // Which data source was used
+  tool_used: 'sqlite' | 'rag' | 'srd' | 'both' | 'all' | 'none';  // Which data source was used
   classification: {
     confidence: number;
     reasoning: string;
@@ -93,7 +102,7 @@ router.post('/', async (req: Request<object, object, ChatRequest>, res: Response
     console.log(`[Chat] Query classification: ${classification.type} (${classification.confidence.toFixed(2)}) - ${classification.reasoning}`);
     
     // Step 2: Fetch context based on classification
-    const { ragResults, sqliteResults } = await fetchContext(
+    const { ragResults, sqliteResults, srdResults } = await fetchContext(
       message,
       classification,
       userContext
@@ -102,8 +111,12 @@ router.post('/', async (req: Request<object, object, ChatRequest>, res: Response
     // Determine which tool(s) were used
     const hasRag = ragResults.length > 0;
     const hasSqlite = sqliteResults.length > 0;
-    const toolUsed: 'sqlite' | 'rag' | 'both' | 'none' =
-      hasRag && hasSqlite ? 'both' :
+    const hasSrd = srdResults.length > 0;
+    const sourceCount = [hasRag, hasSqlite, hasSrd].filter(Boolean).length;
+    const toolUsed: 'sqlite' | 'rag' | 'srd' | 'both' | 'all' | 'none' =
+      sourceCount >= 3 ? 'all' :
+      sourceCount === 2 ? 'both' :
+      hasSrd ? 'srd' :
       hasSqlite ? 'sqlite' :
       hasRag ? 'rag' : 'none';
     
@@ -118,10 +131,16 @@ router.post('/', async (req: Request<object, object, ChatRequest>, res: Response
         ...r.source,
         text: r.formattedText,  // Include formatted text for modal
       })),
+      ...srdResults.map(r => ({
+        type: 'srd' as const,
+        reference: r.source.title,
+        url: r.source.url,
+        text: r.formattedText,  // Include formatted text for modal
+      })),
     ];
     
     // Step 3: Build combined context for LLM
-    const combinedContext = buildCombinedContext(ragResults, sqliteResults, classification);
+    const combinedContext = buildCombinedContext(ragResults, sqliteResults, srdResults, classification);
     
     // Step 4: Generate response
     if (stream) {
@@ -215,9 +234,11 @@ async function fetchContext(
 ): Promise<{
   ragResults: ProcessedRagResult[];
   sqliteResults: ProcessedSqliteResult[];
+  srdResults: ProcessedSrdResult[];
 }> {
   const ragResults: ProcessedRagResult[] = [];
   const sqliteResults: ProcessedSqliteResult[] = [];
+  const srdResults: ProcessedSrdResult[] = [];
   
   const promises: Promise<void>[] = [];
   
@@ -374,10 +395,64 @@ async function fetchContext(
     }
   }
   
+  // Fetch from SRD if needed
+  if (classification.routing.srd) {
+    const endpoints = classification.routing.srdEndpoints || [];
+    
+    // Query classes
+    if (endpoints.includes('classes') && classification.extractedEntities.className) {
+      const className = classification.extractedEntities.className;
+      const classLevel = classification.extractedEntities.classLevel;
+      
+      if (classLevel) {
+        // Get class level features
+        promises.push(
+          getSrdClassLevel(className, classLevel)
+            .then(result => { if (result) srdResults.push(result); })
+            .catch(error => console.error('[Chat] SRD class level query failed:', error))
+        );
+      } else {
+        // Get class overview
+        promises.push(
+          getSrdClass(className)
+            .then(result => { if (result) srdResults.push(result); })
+            .catch(error => console.error('[Chat] SRD class query failed:', error))
+        );
+      }
+    }
+    
+    // Query races
+    if (endpoints.includes('races') && classification.extractedEntities.raceName) {
+      promises.push(
+        getSrdRace(classification.extractedEntities.raceName)
+          .then(result => { if (result) srdResults.push(result); })
+          .catch(error => console.error('[Chat] SRD race query failed:', error))
+      );
+    }
+    
+    // Query spells from SRD if we have a spell name but no SQLite results
+    if (endpoints.includes('spells') && classification.extractedEntities.spellName) {
+      promises.push(
+        getSrdSpell(classification.extractedEntities.spellName)
+          .then(result => { if (result) srdResults.push(result); })
+          .catch(error => console.error('[Chat] SRD spell query failed:', error))
+      );
+    }
+    
+    // Query monsters from SRD if we have a monster name
+    if (endpoints.includes('monsters') && classification.extractedEntities.monsterName) {
+      promises.push(
+        getSrdMonster(classification.extractedEntities.monsterName)
+          .then(result => { if (result) srdResults.push(result); })
+          .catch(error => console.error('[Chat] SRD monster query failed:', error))
+      );
+    }
+  }
+  
   // Wait for all fetches to complete
   await Promise.all(promises);
   
-  return { ragResults, sqliteResults };
+  return { ragResults, sqliteResults, srdResults };
 }
 
 /**
@@ -386,11 +461,17 @@ async function fetchContext(
 function buildCombinedContext(
   ragResults: ProcessedRagResult[],
   sqliteResults: ProcessedSqliteResult[],
+  srdResults: ProcessedSrdResult[],
   classification: ClassificationResult
 ): string {
   const sections: string[] = [];
   
-  // Add SQLite context first (structured data is usually more precise)
+  // Add SRD context first (official 5e SRD data)
+  if (srdResults.length > 0) {
+    sections.push('=== 5e SRD (Official Rules) ===\n' + buildSrdContext(srdResults));
+  }
+  
+  // Add SQLite context (structured dungeon/custom data)
   if (sqliteResults.length > 0) {
     sections.push('=== STRUCTURED DATA (SQLite) ===\n' + buildSqliteContext(sqliteResults));
   }

@@ -30,14 +30,6 @@ const {
 } = Astro.props;
 ---
 
-<!-- Import Mnehmos Fonts -->
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link
-  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap"
-  rel="stylesheet"
-/>
-
 <div class="chat-interface" id="chat-interface">
   <!-- Main Chat Area -->
   <div class="chat-main">
@@ -128,21 +120,19 @@ const {
 </div>
 
 <style>
-  /* === MNEHMOS DESIGN TOKENS === */
-  :root {
-    --copper: #b87333;
-    --copper-light: #d4956a;
-    --stone-900: #1c1917; /* Main BG */
-    --stone-800: #292524; /* Elevated BG */
-    --stone-700: #44403c; /* Borders */
-    --stone-200: #e7e5e4; /* Text Main */
-    --stone-400: #a8a29e; /* Text Muted */
-
+  /* ChatInterface uses global tokens from Layout.astro */
+  /* Component-specific aliases for convenience */
+  .chat-interface {
+    --copper: var(--color-accent-primary);
+    --copper-light: var(--color-accent-secondary);
+    --stone-900: var(--color-bg-secondary);
+    --stone-800: var(--color-bg-tertiary);
+    --stone-700: var(--color-border);
+    --stone-200: var(--color-text-primary);
+    --stone-400: var(--color-text-muted);
     --font-display: "Space Grotesk", sans-serif;
     --font-body: "Inter", sans-serif;
-  }
 
-  .chat-interface {
     display: flex;
     flex-direction: row;
     height: 100%;
@@ -403,6 +393,7 @@ const {
     max-width: 85%;
     animation: messageSlideIn 0.3s ease;
     align-items: flex-start;
+    will-change: transform, opacity;
   }
 
   @keyframes messageSlideIn {
@@ -1198,6 +1189,28 @@ const {
       padding-bottom: calc(0.5rem + var(--safe-area-inset-bottom, 0px));
     }
   }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .chat-interface,
+    .chat-interface * {
+      animation: none !important;
+      transition-duration: 0.01ms !important;
+    }
+
+    :global(.message) {
+      animation: none;
+    }
+
+    .source-sidebar {
+      transition: none;
+    }
+
+    .loading-spinner {
+      animation: none;
+      border-color: var(--copper);
+    }
+  }
 </style>
 
 <script>
@@ -1272,6 +1285,59 @@ const {
       closeSidebar();
     }
   });
+
+  // Keyboard support for sidebar
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sourceSidebar?.classList.contains('open')) {
+      closeSidebar();
+      // Return focus to the source button that opened it
+      const lastSourceButton = document.querySelector('.source-btn:focus, .source-btn');
+      if (lastSourceButton instanceof HTMLElement) {
+        lastSourceButton.focus();
+      }
+    }
+  });
+
+  // Focus trap for sidebar on mobile
+  function trapFocus(element: HTMLElement) {
+    const focusableElements = element.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const firstFocusable = focusableElements[0] as HTMLElement;
+    const lastFocusable = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+    element.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab') return;
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstFocusable) {
+          lastFocusable?.focus();
+          e.preventDefault();
+        }
+      } else {
+        if (document.activeElement === lastFocusable) {
+          firstFocusable?.focus();
+          e.preventDefault();
+        }
+      }
+    });
+  }
+
+  // Trap focus when sidebar opens
+  if (sourceSidebar) {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          const isOpen = sourceSidebar.classList.contains('open');
+          if (isOpen) {
+            // Focus the close button when sidebar opens
+            sidebarClose?.focus();
+          }
+        }
+      });
+    });
+    observer.observe(sourceSidebar, { attributes: true });
+  }
 
   chatForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -1400,6 +1466,7 @@ const {
           btn.className = `source-btn ${source.type}`;
           btn.textContent = `${index + 1}`;
           btn.title = source.reference;
+          btn.setAttribute('aria-label', `View source ${index + 1} of ${sources.length}: ${source.reference}`);
           btn.addEventListener("click", (e) => {
             e.stopPropagation();
             showSourceInSidebar(index);
@@ -1457,7 +1524,10 @@ const {
       chatLoading.classList.toggle("visible", loading);
       chatLoading.setAttribute("aria-hidden", (!loading).toString());
     }
-    if (chatInput) chatInput.disabled = loading;
+    if (chatInput) {
+      chatInput.disabled = loading;
+      chatInput.setAttribute('aria-busy', loading.toString());
+    }
   }
 
   function showError(message: string) {

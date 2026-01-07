@@ -21,7 +21,7 @@ const GITHUB_BLOB_BASE = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/blob
 const GITHUB_TREE_BASE = `https://github.com/${GITHUB_OWNER}/${GITHUB_REPO}/tree/${GITHUB_BRANCH}`;
 
 export interface SourceReference {
-  type: 'rag' | 'sqlite';
+  type: 'rag' | 'sqlite' | 'srd';
   reference: string;  // Human-readable reference
   url: string;        // Clickable web URL
   text?: string;      // Full source text for modal display

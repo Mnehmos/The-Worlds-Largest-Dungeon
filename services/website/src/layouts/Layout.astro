@@ -9,25 +9,30 @@ const {
   description = "The World's Largest Dungeon - AI-powered D&D companion with SRD 5.2 Rules and RAG Architecture.",
 } = Astro.props;
 
-// JSON-LD for Software Application
+// JSON-LD for Web Application (enhanced for SEO)
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  name: "The World's Largest Dungeon AI",
-  applicationCategory: "GameApplication",
-  operatingSystem: "Web",
-  offers: {
+  "@type": "WebApplication",
+  "name": "The World's Largest Dungeon AI",
+  "applicationCategory": "GameApplication",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires JavaScript. Requires HTML5.",
+  "url": Astro.url.href,
+  "offers": {
     "@type": "Offer",
-    price: "0",
-    priceCurrency: "USD",
+    "price": "0",
+    "priceCurrency": "USD",
   },
-  description: description,
-  author: {
+  "description": description,
+  "author": {
     "@type": "Person",
-    name: "Mnehmos",
-    url: "https://mnehmos.github.io/Mnehmos/",
+    "name": "Mnehmos",
+    "url": "https://mnehmos.github.io/Mnehmos/",
   },
-  keywords: "D&D, 5e, SRD 5.2, Dungeon Master, AI, RAG, Chatbot, RPG",
+  "keywords": "D&D, 5e, SRD 5.2, Dungeon Master, AI, RAG, Chatbot, RPG, World's Largest Dungeon",
+  "inLanguage": "en",
+  "isAccessibleForFree": true,
+  "screenshot": `${import.meta.env.BASE_URL}og-image.jpg`,
 };
 ---
 
@@ -63,6 +68,21 @@ const jsonLd = {
       content={`${import.meta.env.BASE_URL}og-image.jpg`}
     />
 
+    <!-- Canonical URL -->
+    <link rel="canonical" href={Astro.url.href} />
+
+    <!-- Theme color for mobile browsers -->
+    <meta name="theme-color" content="#0d0d0d" />
+    <meta name="theme-color" content="#b87333" media="(prefers-color-scheme: dark)" />
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href={`${import.meta.env.BASE_URL}apple-touch-icon.png`} />
+
+    <!-- Mobile Web App Capable -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="WLD AI" />
+
     <link
       rel="icon"
       type="image/svg+xml"
@@ -77,13 +97,14 @@ const jsonLd = {
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap"
       rel="stylesheet"
     />
 
     <title>{title}</title>
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <div class="app-container">
       <header class="app-header">
         <div class="logo">
@@ -95,7 +116,7 @@ const jsonLd = {
         </p>
       </header>
 
-      <main class="app-main">
+      <main class="app-main" id="main-content">
         <slot />
       </main>
 
@@ -323,6 +344,18 @@ const jsonLd = {
     color: var(--color-text-primary);
   }
 
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   /* Focus styles */
   :focus-visible {
     outline: 2px solid var(--color-accent-primary);
@@ -356,6 +389,34 @@ const jsonLd = {
 </style>
 
 <style>
+  /* Skip link for accessibility */
+  .skip-link {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    z-index: 9999;
+  }
+
+  .skip-link:focus {
+    position: fixed;
+    top: var(--space-md);
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    height: auto;
+    padding: var(--space-sm) var(--space-lg);
+    background: var(--color-accent-primary);
+    color: white;
+    font-family: var(--font-display);
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    text-decoration: none;
+    box-shadow: var(--shadow-lg);
+  }
+
   /* App layout */
   .app-container {
     display: flex;
