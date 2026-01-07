@@ -19,14 +19,14 @@ An AI-powered assistant for "The World's Largest Dungeon" D&D campaign, featurin
 │  ┌───────────────────────────────────────────────────────────────────┐  │
 │  │              Chat API (Middleware)                                 │  │
 │  │              services/chat-api/                                    │  │
-│  └──────────────────────┬─────────────────────┬──────────────────────┘  │
-│                         │                     │                          │
-│            ┌────────────┘                     └────────────┐             │
-│            ▼                                               ▼             │
-│  ┌─────────────────────┐                     ┌─────────────────────────┐│
-│  │    RAG Server       │                     │    SQLite Server        ││
-│  │  services/rag-server│                     │  services/sqlite-server ││
-│  └─────────────────────┘                     └─────────────────────────┘│
+│  └──────────┬─────────────────────┬─────────────────────┬────────────┘  │
+│             │                     │                     │                │
+│    ┌────────┘                     │                     └────────┐       │
+│    ▼                              ▼                              ▼       │
+│  ┌──────────────┐    ┌──────────────────┐    ┌─────────────────────────┐│
+│  │  RAG Server  │    │  SQLite Server   │    │    5e-SRD API (ext)     ││
+│  │ rag-server/  │    │ sqlite-server/   │    │  dnd5eapi.co/api/2014   ││
+│  └──────────────┘    └──────────────────┘    └─────────────────────────┘│
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -62,28 +62,40 @@ The-Worlds-Largest-Dungeon/
 ## Services
 
 ### 1. Website (services/website/)
+
 - **Tech:** Astro
 - **Deploy:** GitHub Pages
 - **Features:** Chat interface, dark fantasy theme, mobile responsive
 
 ### 2. Chat API (services/chat-api/)
+
 - **Tech:** Express + TypeScript
 - **Deploy:** Railway
-- **Features:** Query classification, LLM synthesis via OpenRouter
+- **Features:** Query classification, LLM synthesis via OpenRouter, 5e-SRD integration
 
 ### 3. RAG Server (services/rag-server/)
+
 - **Tech:** Index Foundry
 - **Deploy:** Railway
 - **Features:** 1,940 semantic chunks, hybrid search
 
 ### 4. SQLite Server (services/sqlite-server/)
+
 - **Tech:** Express + better-sqlite3
 - **Deploy:** Railway
 - **Features:** 340 spells, 80 monsters, 205 equipment, 337 rooms
 
+### 5. 5e-SRD API (External)
+
+- **Tech:** Public REST API
+- **URL:** https://www.dnd5eapi.co/api/2014
+- **Features:** D&D 5e classes, races, spells, monsters, features, traits
+- **Usage:** Auto-detected for class/race queries (e.g., "level 3 fighter features")
+
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js 20+
 - npm
 
@@ -115,6 +127,7 @@ npm install && npm run dev
 ### Environment Variables
 
 #### Chat API (.env)
+
 ```env
 OPENROUTER_API_KEY=your_openrouter_key
 RAG_SERVER_URL=http://localhost:8080
@@ -125,6 +138,7 @@ PORT=8081
 ```
 
 #### RAG Server (.env)
+
 ```env
 OPENAI_API_KEY=your_openai_key
 PORT=8080
@@ -145,19 +159,23 @@ npm run seed
 ### GitHub Configuration
 
 **Secrets:**
+
 - `RAILWAY_TOKEN` - Railway deployment token
 
 **Variables:**
+
 - `CHAT_API_URL` - Deployed chat API URL
 - `SITE_URL` - GitHub Pages URL
 - `BASE_PATH` - Repo subdirectory (if applicable)
 
 **GitHub Pages:**
+
 - Enable Pages with "GitHub Actions" source
 
 ## API Endpoints
 
 ### Chat API
+
 ```
 POST /chat       - Send chat message
 GET  /health     - Service health check
@@ -165,6 +183,7 @@ GET  /status     - Detailed service status
 ```
 
 ### RAG Server
+
 ```
 POST /search     - Vector similarity search
 POST /chat       - Chat with RAG context
@@ -172,6 +191,7 @@ GET  /health     - Health check
 ```
 
 ### SQLite Server
+
 ```
 GET /spells      - Query spells (level, school, class)
 GET /monsters    - Query monsters (cr, type, size)
@@ -183,6 +203,7 @@ GET /health      - Health check
 ## License
 
 This project uses content from:
+
 - **D&D 5.2 SRD** - Open Gaming License
 - **The World's Largest Dungeon** - AEG
 
@@ -190,4 +211,4 @@ See respective files for licensing details.
 
 ---
 
-*"The World's Largest Dungeon represents years of adventuring. Do not tread lightly."*
+_"The World's Largest Dungeon represents years of adventuring. Do not tread lightly."_
